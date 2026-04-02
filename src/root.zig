@@ -1,18 +1,41 @@
 const std = @import("std");
 
+pub const FlagErrs = error {
+    NoSuchFlag,
+};
+
 const FlagFmt = enum {
     Long, Short,
 };
 
-pub fn parse(args: *std.process.ArgIteratorPosix, stdout: *std.Io.Writer, flags: anytype) !void {
-    inFlags(flags);
+const FlagType = enum {
+    Switch, Argumentative
+};
 
+const FlagVal = union(FlagType) {
+    Switch: bool,
+    Argumentative: []u8,
+};
+
+pub const Flag = struct {
+    long:   ?[]const u8,
+    short:  ?u8,
+    value:  FlagVal,
+    opt:    bool,
+    desc:   ?[]const u8,
+};
+
+pub fn parse(args: *std.process.ArgIteratorPosix, flags: anytype) !void {
     while (args.next()) |arg| {
         const fmt: FlagFmt = flagfmt(arg) orelse continue;
-        switch (fmt) {
-            .Long   => try stdout.print("{s}: {s}\n", .{ arg[2..], @tagName(fmt)}),
-            .Short  => try stdout.print("{s}: {s}\n", .{ arg[1..], @tagName(fmt)}),
-        }
+
+        const flag: []const u8 = switch (fmt) {
+            // Slice to omit '--' and '-'
+            .Long   => try get_long_flag(flags, arg[2..]),
+            .Short  => try get_short_flag(flags, arg[1..]),
+        };
+
+        std.debug.print("{s}\n", .{ flag });
     }
 }
 
@@ -24,8 +47,24 @@ fn flagfmt(arg: []const u8) ?FlagFmt {
     return FlagFmt.Short;
 }
 
-fn inFlags(flags: anytype) void {
+fn get_long_flag(flags: anytype, arg: []const u8) FlagErrs![]const u8 {
     inline for (@typeInfo(flags).@"struct".decls) |decls| {
-        std.debug.print("{s}\n", .{ decls.name });
+        const long: []const u8 = @field(flags, decls.name).@"long" orelse continue;
+        if (std.mem.eql(u8, arg, long)) return long;
     }
+
+    return FlagErrs.NoSuchFlag;
 } 
+
+fn get_short_flag(flags: anytype, arg: []const u8) FlagErrs![]const u8 {
+    outer: for (arg) |char| {
+        inline for (@typeInfo(flags).@"struct".decls) |decls| {
+            const short: u8 = @field(flags, decls.name).@"short" orelse continue;
+            if (short == char) continue :outer;
+        }
+
+        return FlagErrs.NoSuchFlag;
+    }
+
+    return arg;
+}

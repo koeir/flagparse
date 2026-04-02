@@ -7,20 +7,27 @@ pub fn main() !void {
     const stdout = &stdout_writer.interface;
     defer stdout.flush() catch {};
 
+    // parse requires       vvvvvvvvvvvv
     var args: std.process.ArgIteratorPosix = .init();
-    try flag.parse(&args, stdout, Flags);
+
+    try flag.parse(&args, Flags);
+    
 }
 
 const Flags = struct {
-    pub var foo = 0;
-    
-    pub const recursive = .{
+    pub const recursive: flag.Flag = .{
+        .long = "recursive",
         .short = 'r', 
-        .value = false,
+        .value = .{ .Switch = false },
+        .opt = true,
+        .desc = null,
     };
 
-    pub const force = .{
-        .short = 'r',
-        .value = false,
+    pub const force: flag.Flag = .{
+        .long = "force",
+        .short = 'f',
+        .value = .{ .Switch = false },
+        .opt = true,
+        .desc = "Skip confirmation prompts",
     };
 };
