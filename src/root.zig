@@ -79,20 +79,21 @@ fn get_short_flag(flags: anytype, arg: []const u8) FlagErrs![]const u8 {
 // they can be used in runtime
 //
 // Turns declarations from the init flags into fields
-pub fn init(comptime init_flags: type) type {
+pub fn init(comptime init_flags: anytype) type {
     const init_flags_info = @typeInfo(init_flags).@"struct";
 
     var mut_flags: [init_flags_info.decls.len]std.builtin.Type.StructField = undefined;
     
     inline for (init_flags_info.decls, 0..) |decl, i| {
         const decl_field = @field(init_flags, decl.name);
+        const mut_field = decl_field;
 
         mut_flags[i] = std.builtin.Type.StructField {
             .name = decl.name,
-            .type = @TypeOf(decl_field), // Should be Flag
-            .default_value_ptr = &decl_field,
+            .type = @TypeOf(decl_field),
+            .default_value_ptr = @ptrCast(&mut_field),
             .is_comptime = false,
-            .alignment = @alignOf(Flag),
+            .alignment = @alignOf(@TypeOf(init_flags)),
         };
     }
 

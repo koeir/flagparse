@@ -10,24 +10,46 @@ pub fn main() !void {
     // parse requires       vvvvvvvvvvvv
     var args: std.process.ArgIteratorPosix = .init();
 
-    const Result = flag.init(Flags);
+    // .init makes a mutable runtime version of the initialized Flags
+    // Declarations are turned into fields
+    //
+    //          v COMPTIME STRUCT v                       v RUNTIME STRUCT v
+    // _____________________________________       _________________________________
+    // [ const Flags = struct {            ]       [   const Result = struct {     ]
+    // [      pub const recursive = ...    ]  -->  [       .recursive = ...        ]
+    // [___________________________________]       [_______________________________]
+    const Result = comptime flag.init(Flags);
+
+    // Make a mutable instance populated with the default values
+    var mut_flags = Result{};
+
+    // (WIP)
+    // parse is a runtime function that actually changes
+    // the values of the mutable
     var flags: Result = try flag.parse(&args, Flags, Result);
+    _ = &flags;
 
-    _ = &flags; // debug
-    if (flags.@"recursive".@"long") |long| {
-        std.debug.print("Longhand:  --{s}\n", .{ long });
+    try stdout.print("Force: {}\n", .{ mut_flags.force.value });
+    mut_flags.force.value = .{ .Switch = true };
+    try stdout.print("Force: {}\n", .{ mut_flags.force.value });
+
+    try stdout.print("\n", .{});
+
+    if (flags.recursive.long) |long| {
+        try stdout.print("Longhand:  --{s}\n", .{ long });
     }
-    if (flags.@"recursive".@"short") |short| {
-        std.debug.print("Shorthand: -{c}\n", .{ short });
+    if (flags.recursive.short) |short| {
+        try stdout.print("Shorthand: -{c}\n", .{ short });
     }
 
-    const recursive: flag.FlagVal = flags.@"recursive".@"value";
+    const recursive: flag.FlagVal = flags.recursive.value;
     switch ( recursive ) {
-        .Switch => |val| std.debug.print("Recursion is {}\n", .{ val }),
+        .Switch => |val| try stdout.print("Recursion is {}\n", .{ val }),
         .Argumentative => unreachable,
     }
 }
 
+// Initialize flags and their default values
 const Flags = struct {
     pub const recursive: flag.Flag = .{
         .long = "recursive",
