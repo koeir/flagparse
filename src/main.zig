@@ -10,8 +10,22 @@ pub fn main() !void {
     // parse requires       vvvvvvvvvvvv
     var args: std.process.ArgIteratorPosix = .init();
 
-    try flag.parse(&args, Flags);
-    
+    const Result = flag.init(Flags);
+    var flags: Result = try flag.parse(&args, Flags, Result);
+
+    _ = &flags; // debug
+    if (flags.@"recursive".@"long") |long| {
+        std.debug.print("Longhand:  --{s}\n", .{ long });
+    }
+    if (flags.@"recursive".@"short") |short| {
+        std.debug.print("Shorthand: -{c}\n", .{ short });
+    }
+
+    const recursive: flag.FlagVal = flags.@"recursive".@"value";
+    switch ( recursive ) {
+        .Switch => |val| std.debug.print("Recursion is {}\n", .{ val }),
+        .Argumentative => unreachable,
+    }
 }
 
 const Flags = struct {
