@@ -85,13 +85,12 @@ pub fn init(comptime init_flags: anytype) type {
     var mut_flags: [init_flags_info.decls.len]std.builtin.Type.StructField = undefined;
     
     inline for (init_flags_info.decls, 0..) |decl, i| {
-        const decl_field = @field(init_flags, decl.name);
-        const mut_field = decl_field;
+        const decl_field: Flag = @field(init_flags, decl.name);
 
         mut_flags[i] = std.builtin.Type.StructField {
             .name = decl.name,
             .type = @TypeOf(decl_field),
-            .default_value_ptr = @ptrCast(&mut_field),
+            .default_value_ptr = &decl_field,
             .is_comptime = false,
             .alignment = @alignOf(@TypeOf(init_flags)),
         };

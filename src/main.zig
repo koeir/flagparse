@@ -29,12 +29,14 @@ pub fn main() !void {
     var flags: Result = try flag.parse(&args, Flags, Result);
     _ = &flags;
 
+    // Mutate value
     try stdout.print("Force: {}\n", .{ mut_flags.force.value });
     mut_flags.force.value = .{ .Switch = true };
     try stdout.print("Force: {}\n", .{ mut_flags.force.value });
 
     try stdout.print("\n", .{});
 
+    // Long hands and short hands
     if (flags.recursive.long) |long| {
         try stdout.print("Longhand:  --{s}\n", .{ long });
     }
@@ -42,11 +44,7 @@ pub fn main() !void {
         try stdout.print("Shorthand: -{c}\n", .{ short });
     }
 
-    const recursive: flag.FlagVal = flags.recursive.value;
-    switch ( recursive ) {
-        .Switch => |val| try stdout.print("Recursion is {}\n", .{ val }),
-        .Argumentative => unreachable,
-    }
+    try stdout.print("Recursion is: {}\n", .{ flags.recursive.value.Switch });
 }
 
 // Initialize flags and their default values
