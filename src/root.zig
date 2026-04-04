@@ -26,6 +26,14 @@ pub const Flag = struct {
     opt:    bool,
     desc:   ?[]const u8,
 
+    // Toggles value of Switch type flag
+    pub fn toggle(self: *Flag) !void {
+        switch (self.value) {
+            .Switch => |*val| val.* = !val.*,
+            else    => |_| return FlagErrs.FlagNotSwitch,
+        }
+    }
+
     pub fn format(
         self: @This(),
         writer: *std.Io.Writer,

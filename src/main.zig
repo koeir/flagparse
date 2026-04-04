@@ -39,7 +39,7 @@ pub fn main() !void {
 
     // Mutate value
     try stdout.print("\nForce: {}\n", .{ mut_flags.force.value });
-    mut_flags.force.value = .{ .Switch = true };
+    try mut_flags.force.toggle();
     try stdout.print("Force: {}\n", .{ mut_flags.force.value });
 
     // Print all flags
