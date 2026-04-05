@@ -7,88 +7,61 @@ pub fn main() !void {
     const stdout = &stdout_writer.interface;
     defer stdout.flush() catch {};
 
-    var alloc_buffer: [1024]u8 = undefined;
-    var fba: std.heap.FixedBufferAllocator = .init(&alloc_buffer);
+    var flaggar: [initflags.len]flag.Flag = undefined;
+    for (initflags, 0..) |f, i| {
+        flaggar[i] = f;
+    }
 
-    // parse requires       vvvvvvvvvvvv
-    var args: std.process.ArgIteratorPosix = .init();
+    const flaggot: flag.Flags = .{
+        .list = &flaggar,
+    };
 
-    // .init makes a mutable runtime version of the initialized Flags
-    // Declarations are turned into fields
-    //
-    //          v COMPTIME STRUCT v                       v RUNTIME STRUCT v
-    // _____________________________________       _________________________________
-    // [ const Flags = struct {            ]       [   const Result = struct {     ]
-    // [      pub const recursive = ...    ]  -->  [       .recursive = ...        ]
-    // [___________________________________]       [_______________________________]
-    const Result = comptime flag.init(Flags);
+    for (flaggot.list) |f| {
+        try stdout.print("{f}\n", .{ f });
+    }
 
-    // Make a mutable instance populated with the default values
-    var mut_flags = Result{};
-    _ = &mut_flags;
+    flaggar[0] = flag.Flag {
+        .name = "test",
+        .long = "test",
+        .short = 'r',
+        .opt = true,
+        .value = .{ .Switch = false },
+        .desc = "Recurse into directories",
+    };
 
-    // (WIP)
-    // parse is a runtime function that actually changes
-    // the values of the mutable
-    var flags: Result = try flag.parse(&args, Flags, Result);
-    _ = &flags;
-
-    // Long hands and short hands
-    try stdout.print("Longhand:  --{s}\n", .{ flags.recursive.long.? });
-    try stdout.print("Shorthand: -{c}\n", .{ flags.recursive.short.? });
-
-    // Value
-    try stdout.print("Recursion is: {}\n", .{ flags.recursive.value.Switch });
-
-    // Mutate value
-    try stdout.print("\nForce: {}\n", .{ flags.force.value });
-    try flags.force.toggle();
-    try stdout.print("Force: {}\n", .{ flags.force.value });
-
-    // Set path
-    const path: []const u8 = try flags.file.set_arg(fba.allocator(), "/path/to/file");
-    defer fba.allocator().free(path);
-
-    try stdout.print("Path: {s}\n", .{ flags.file.value.Argumentative });
-
-    // Print all flags
-    try stdout.writeAll("\nFlags:\n");
-    inline for (@typeInfo(Flags).@"struct".decls) |decl| {
-        try stdout.print("{f}\n", .{ @field(Flags, decl.name) });
+    for (flaggot.list) |f| {
+        try stdout.print("{f}\n", .{ f });
     }
 }
 
 // Initialize flags and their default values
 // name doesn't really matter as long as the 
 // members are all of type Flag
-const Flags = struct {
-    pub const recursive: flag.Flag = .{
+const initflags = [_]flag.Flag {
+    flag.Flag {
+        .name = "recursive",
         .long = "recursive",
-        .short = 'r', 
-        .value = .{ .Switch = false },
+        .short = 'r',
         .opt = true,
-        .desc = "Recurse within directories",
-    };
+        .value = .{ .Switch = false },
+        .desc = "Recurse into directories",
+    },
 
-    pub const force: flag.Flag = .{
+    flag.Flag {
+        .name = "force",
         .long = "force",
         .short = 'f',
-        .value = .{ .Switch = false },
         .opt = true,
+        .value = .{ .Switch = false },
         .desc = "Skip confirmation prompts",
-    };
+    },
 
-    pub const file: flag.Flag = .{
+    flag.Flag {
+        .name = "file",
         .long = "path",
         .short = 'p',
-        .value = .{ .Argumentative = undefined },
         .opt = true,
+        .value = .{.Argumentative = undefined },
         .desc = "Path to file",
-    };
-
-    // Raises compilation error
-//  pub const foo = "foo";
-
-    // Ignored
-    bar: bool,
+    }
 };

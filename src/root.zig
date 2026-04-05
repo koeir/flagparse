@@ -21,10 +21,10 @@ pub const FlagVal = union(FlagType) {
 };
 
 pub const Flags = struct {
-    list: []Flag,
+    list: []const Flag,
 
     // returns null if not found
-    pub fn get(self: *Flags, name: []const u8) ?*Flag {
+    pub fn get(self: *Flags, name: []const u8) ?*const Flag {
         return for (self.list) |*flag| {
             if (std.mem.eql(u8, flag.name, name)) break flag;
         } else null;
