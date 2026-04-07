@@ -21,8 +21,8 @@ pub const FlagVal = union(FlagType) {
 };
 
 pub const Flags = struct {
-    list: []const Flag,
-
+    list: *const []const Flag,
+    
     // returns null if not found
     pub fn get(self: *Flags, name: []const u8) ?*const Flag {
         return for (self.list) |*flag| {
@@ -97,21 +97,31 @@ pub const Flag = struct {
 
 pub fn parse(
     args: *std.process.ArgIteratorPosix,
-    flags: anytype,
-    comptime T: type) !T {
+    init_flags: []const Flag,
+    out_flags: []Flag) !Flags {
+
+    for (init_flags, 0..) |f, i| {
+        out_flags[i] = f;
+    }
+
     while (args.next()) |arg| {
         const fmt: FlagFmt = flagfmt(arg) orelse continue;
 
-        const flag: []const u8 = switch (fmt) {
+        var flag: *Flag = switch (fmt) {
             // Slice to omit '--' and '-'
-            .Long   => try get_long_flag(flags, arg[2..]),
-            .Short  => try get_short_flag(flags, arg[1..]),
+            .Long   => try get_long_flag(out_flags, arg[2..]),
+            .Short  => try get_short_flag(out_flags, arg[1..]),
         };
 
-        _ = flag; // debug
+        switch (flag.value) {
+            .Switch  => try flag.toggle(),
+            else => continue,
+        }
     }
 
-    return T{};
+    return Flags {
+        .list = &out_flags,
+    };
 }
 
 fn flagfmt(arg: []const u8) ?FlagFmt {
@@ -122,23 +132,19 @@ fn flagfmt(arg: []const u8) ?FlagFmt {
     return FlagFmt.Short;
 }
 
-fn get_long_flag(flags: anytype, arg: []const u8) FlagErrs![]const u8 {
-    inline for (@typeInfo(flags).@"struct".decls) |decls| {
-        const long: []const u8 = @field(flags, decls.name).@"long" orelse continue;
-        if (std.mem.eql(u8, arg, long)) return decls.name;
+fn get_long_flag(flags: []Flag, arg: []const u8) FlagErrs!*Flag {
+    for (flags) |*flag| {
+        if (std.mem.eql(u8, flag.long orelse continue, arg)) return flag;
     }
 
     return FlagErrs.NoSuchFlag;
 }
 
 // Should be updated to work for flag chains
-fn get_short_flag(flags: anytype, arg: []const u8) FlagErrs![]const u8 {
-    for (arg) |char| {
-        inline for (@typeInfo(flags).@"struct".decls) |decls| {
-            const short: u8 = @field(flags, decls.name).@"short" orelse continue;
-            if (short == char) {
-                return decls.name;
-            }
+fn get_short_flag(flags: []Flag, arg: []const u8) FlagErrs!*Flag {
+    for (arg) |c| {
+        for (flags) |*flag| {
+            if (flag.short orelse continue == c) return flag;
         }
     }
 

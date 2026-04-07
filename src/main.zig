@@ -7,30 +7,17 @@ pub fn main() !void {
     const stdout = &stdout_writer.interface;
     defer stdout.flush() catch {};
 
+    var args: std.process.ArgIteratorPosix = .init();
+
     var flaggar: [initflags.len]flag.Flag = undefined;
-    for (initflags, 0..) |f, i| {
-        flaggar[i] = f;
-    }
+    const flags = try flag.parse(&args, &initflags, &flaggar);
 
-    const flaggot: flag.Flags = .{
-        .list = &flaggar,
-    };
-
-    for (flaggot.list) |f| {
-        try stdout.print("{f}\n", .{ f });
-    }
-
-    flaggar[0] = flag.Flag {
-        .name = "test",
-        .long = "test",
-        .short = 'r',
-        .opt = true,
-        .value = .{ .Switch = false },
-        .desc = "Recurse into directories",
-    };
-
-    for (flaggot.list) |f| {
-        try stdout.print("{f}\n", .{ f });
+    for (flags.list.*) |f| {
+        try stdout.print("{f}    ", .{ f });
+        switch (f.value) { 
+            .Switch => |val| try stdout.print("{any}\n", .{ val }),
+            else => continue,
+        }
     }
 }
 
