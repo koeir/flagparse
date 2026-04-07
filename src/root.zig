@@ -5,6 +5,8 @@ pub const FlagErrs = error {
     NoSuchFlag,
     FlagNotSwitch,
     FlagNotArg,
+    DuplicateFlags,
+    IncorrectArrSize
 };
 
 const FlagFmt = enum {
@@ -106,30 +108,54 @@ pub const Flag = struct {
 
 pub fn parse(
     args: *std.process.ArgIteratorPosix,
-    init_flags: []const Flag,
+    comptime init_flags: []const Flag,
     out_flags: []Flag) !Flags {
 
-    for (init_flags, 0..) |f, i| {
-        out_flags[i] = f;
+    if (out_flags.len != init_flags.len) {
+        std.debug.print("ERROR: Size of parse result array must match size of init flags array\n", .{});
+        return FlagErrs.IncorrectArrSize;
+    }
+
+    const default_flags: Flags = .{ .list = init_flags };
+
+    for (init_flags, 0..) |value, i| {
+        out_flags[i] = value;
     }
 
     while (args.next()) |arg| {
         const fmt: FlagFmt = flagfmt(arg) orelse continue;
 
-        var flag: *Flag = switch (fmt) {
+        const flag: *Flag = switch (fmt) {
             // Slice to omit '--' and '-'
-            .Long   => try get_long_flag(out_flags, arg[2..]),
-            .Short  => try get_short_flag(out_flags, arg[1..]),
+            .Long   => get_long_flag(out_flags, arg[2..]) catch {
+                std.debug.print("No such flag: {s}\n", .{arg});
+                return FlagErrs.NoSuchFlag;
+            },
+            .Short  => get_short_flag(out_flags, arg[1..]) catch {
+                std.debug.print("No such flag: {s}\n", .{arg});
+                return FlagErrs.NoSuchFlag;
+            },
         };
 
         switch (flag.value) {
-            .Switch  => try flag.toggle(),
-            else => continue,
+            .Switch => |val| {
+                // Check if the flag is duplicate
+                const default_val = try default_flags.switchval(flag.name);
+
+                // Handle accordingly; will add conf opt to return if dup
+                if (val != default_val) {
+                    continue;
+                }
+
+                try flag.toggle();
+            },
+
+            else    => continue,
         }
     }
 
     return Flags {
-        .list = out_flags,
+        .list = out_flags
     };
 }
 
@@ -158,26 +184,4 @@ fn get_short_flag(flags: []Flag, arg: []const u8) FlagErrs!*Flag {
     }
 
     return FlagErrs.NoSuchFlag;
-}
-
-// Make a mutable copy of the initialized flags so that
-// they can be used in runtime
-//
-// Turns declarations from the init flags into fields
-pub fn init(comptime init_flags: anytype) Flags {
-    const init_flags_info = @typeInfo(init_flags).@"struct";
-
-    var flagarr: [init_flags_info.decls.len]Flag = undefined;
-
-    inline for (init_flags_info.decls, 0..) |decl, i| {
-        const decl_field = @field(init_flags, decl.name);
-        if (@TypeOf(decl_field) != Flag) {
-            @compileError("Found declaration in struct of init flags that is not of type Flag");
-        }
-        flagarr[i] = decl_field;
-    }
-
-    return Flags {
-        .list = &flagarr,
-    };
 }

@@ -13,7 +13,7 @@ pub fn main() !void {
     const flags = try flag.parse(&args, &initflags, &flaggar);
 
     for (flags.list) |f| {
-        try stdout.print("{f}\n", .{f});
+        std.debug.print("{f}\n", .{f});
     }
 
     try stdout.print("{any}\n", .{ try flags.switchval("recursive") });
