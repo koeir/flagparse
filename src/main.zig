@@ -10,7 +10,7 @@ pub fn main() !void {
     var args: std.process.ArgIteratorPosix = .init();
 
     var flaggar: [initflags.len]flag.Flag = undefined;
-    const flags = try flag.parse(&args, &initflags, &flaggar);
+    const flags = try flag.parse(&args, &initflags, &flaggar, .{ .NoDups = true, .verbose = true });
 
     for (flags.list) |f| {
         std.debug.print("{f}\n", .{f});
