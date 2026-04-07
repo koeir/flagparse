@@ -21,20 +21,29 @@ pub const FlagVal = union(FlagType) {
 };
 
 pub const Flags = struct {
-    list: *const []const Flag,
+    list: []const Flag,
     
     // returns null if not found
     pub fn get(self: *const Flags, name: []const u8) ?*const Flag {
-        return for (self.list.*) |flag| {
+        return for (self.list) |flag| {
             if (std.mem.eql(u8, flag.name, name)) break &flag;
         } else null;
     }
 
     // errs if not found
     pub fn try_get(self: *const Flags, name: []const u8) FlagErrs!*const Flag {
-        return for (self.list.*) |flag| {
+        return for (self.list) |flag| {
             if (std.mem.eql(u8, flag.name, name)) break &flag;
         } else FlagErrs.NoSuchFlag;
+    }
+
+    pub fn switchval(self: *const Flags, name: []const u8) FlagErrs!bool {
+        const flag = try try_get(self, name);
+
+        return switch (flag.value) {
+            .Switch => |val| val,
+            else => FlagErrs.NoSuchFlag,
+        };
     }
 };
 
@@ -120,7 +129,7 @@ pub fn parse(
     }
 
     return Flags {
-        .list = &out_flags,
+        .list = out_flags,
     };
 }
 
