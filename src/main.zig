@@ -9,51 +9,55 @@ pub fn main() !void {
 
     var args: std.process.ArgIteratorPosix = .init();
 
-    var flagarr: [initflags.len]flag.Flag = undefined;
-    const flags = try flag.parse(&args, &initflags, &flagarr, .{ .verbose = true });
+    var flagarr: [initflags.list.len]flag.Flag = undefined;
+    const flags = try flag.parse(&args, initflags, &flagarr, .{ .verbose = true });
 
     for (flags.list) |f| {
-        try stdout.print("{f}\n", .{ f });
-        try stdout.writeAll("Is set to ");
-
         switch (f.value) {
-            .Switch => |val| try stdout.print("{}\n", .{ val }),
-            .Argumentative => |val| try stdout.print("{s}\n", .{ val }),
+            .Switch => |val| {
+                if (val == try initflags.get(f.name).?.switchval()) continue;
+                try stdout.print("{f}\n", .{ f });
+            },
+            .Argumentative => |val| {
+                if (std.mem.eql(u8, val, initflags.get(f.name).?.value.Argumentative)) continue;
+                try stdout.print("{s}\n", .{ val });
+            },
         }
-
-        try stdout.writeAll("\n");
     }
 }
 
 // Initialize flags and their default values
 // name doesn't really matter as long as the 
 // members are all of type Flag
-const initflags = [_]flag.Flag {
-    flag.Flag {
-        .name = "recursive",
-        .long = "recursive",
-        .short = 'r',
-        .opt = true,
-        .value = .{ .Switch = false },
-        .desc = "Recurse into directories",
-    },
+const initflags: flag.Flags = .{
+    .list = &[_] flag.Flag 
+    {
+            flag.Flag {
+                .name = "recursive",
+                .long = "recursive",
+                .short = 'r',
+                .opt = true,
+                .value = .{ .Switch = false },
+                .desc = "Recurse into directories",
+            },
 
-    flag.Flag {
-        .name = "force",
-        .long = "force",
-        .short = 'f',
-        .opt = true,
-        .value = .{ .Switch = false },
-        .desc = "Skip confirmation prompts",
-    },
+            flag.Flag {
+                .name = "force",
+                .long = "force",
+                .short = 'f',
+                .opt = true,
+                .value = .{ .Switch = false },
+                .desc = "Skip confirmation prompts",
+            },
 
-    flag.Flag {
-        .name = "file",
-        .long = "path",
-        .short = 'p',
-        .opt = true,
-        // Should not be undef
-        .value = .{ .Argumentative = "" },
-        .desc = "Path to file",
-    }
+            flag.Flag {
+                .name = "file",
+                .long = "path",
+                .short = 'p',
+                .opt = true,
+                // Should not be undef
+                .value = .{ .Argumentative = "" },
+                .desc = "Path to file",
+            }
+    },
 };

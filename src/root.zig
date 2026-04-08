@@ -110,19 +110,17 @@ pub const ParseConfig = struct {
 
 pub fn parse(
     args: *std.process.ArgIteratorPosix,
-    comptime init_flags: []const Flag,
+    comptime init_flags: Flags,
     out_flags: []Flag,
     comptime cfg: ParseConfig,
     ) !Flags {
 
-    if (out_flags.len != init_flags.len) {
+    if (out_flags.len != init_flags.list.len) {
         std.debug.print("ERROR: Size of parse result array must match size of init flags array\n", .{});
         return FlagErrs.IncorrectArrSize;
     }
 
-    const default_flags: Flags = .{ .list = init_flags };
-
-    for (init_flags, 0..) |value, i| {
+    for (init_flags.list, 0..) |value, i| {
         out_flags[i] = value;
     }
 
@@ -130,8 +128,8 @@ pub fn parse(
         const fmt: FlagFmt = flagfmt(arg) orelse continue;
 
         switch (fmt) {
-            .Short => try parse_chain(arg[1..], out_flags, default_flags, cfg),
-            .Long => try parse_long(arg[2..], out_flags, default_flags, cfg),
+            .Short => try parse_chain(arg[1..], out_flags, init_flags, cfg),
+            .Long => try parse_long(arg[2..], out_flags, init_flags, cfg),
         }
     }
 
