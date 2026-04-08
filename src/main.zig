@@ -9,15 +9,20 @@ pub fn main() !void {
 
     var args: std.process.ArgIteratorPosix = .init();
 
-    var flaggar: [initflags.len]flag.Flag = undefined;
-    const flags = try flag.parse(&args, &initflags, &flaggar, .{ .NoDups = true, .verbose = true });
+    var flagarr: [initflags.len]flag.Flag = undefined;
+    const flags = try flag.parse(&args, &initflags, &flagarr, .{ .verbose = true });
 
     for (flags.list) |f| {
-        std.debug.print("{f}\n", .{f});
-    }
+        try stdout.print("{f}\n", .{ f });
+        try stdout.writeAll("Is set to ");
 
-    try stdout.print("{any}\n", .{ try flags.switchval("recursive") });
-    try stdout.print("{any}\n", .{ try flags.switchval("force") });
+        switch (f.value) {
+            .Switch => |val| try stdout.print("{}\n", .{ val }),
+            .Argumentative => |val| try stdout.print("{s}\n", .{ val }),
+        }
+
+        try stdout.writeAll("\n");
+    }
 }
 
 // Initialize flags and their default values
@@ -47,7 +52,8 @@ const initflags = [_]flag.Flag {
         .long = "path",
         .short = 'p',
         .opt = true,
-        .value = .{.Argumentative = undefined },
+        // Should not be undef
+        .value = .{ .Argumentative = "" },
         .desc = "Path to file",
     }
 };

@@ -37,15 +37,6 @@ pub const Flags = struct {
             if (std.mem.eql(u8, flag.name, name)) break &flag;
         } else FlagErrs.NoSuchFlag;
     }
-
-    pub fn switchval(self: *const Flags, name: []const u8) FlagErrs!bool {
-        const flag = try try_get(self, name);
-
-        return switch (flag.value) {
-            .Switch => |val| val,
-            else => FlagErrs.NoSuchFlag,
-        };
-    }
 };
 
 pub const Flag = struct {
@@ -74,6 +65,13 @@ pub const Flag = struct {
             },
             else           => |_| return FlagErrs.FlagNotArg,
         }
+    }
+
+    pub fn switchval(self: *const Flag) FlagErrs!bool {
+        return switch (self.value) {
+            .Switch => |val| val,
+            else => FlagErrs.NoSuchFlag,
+        };
     }
 
     pub fn format(
@@ -106,7 +104,7 @@ pub const Flag = struct {
 };
 
 pub const ParseConfig = struct {
-    NoDups: bool = false,
+    AllowDups: bool = false,
     verbose: bool = false,
 };
 
@@ -131,45 +129,57 @@ pub fn parse(
     while (args.next()) |arg| {
         const fmt: FlagFmt = flagfmt(arg) orelse continue;
 
-        const flag: *Flag = switch (fmt) {
-            // Slice to omit '--' and '-'
-            .Long   => get_long_flag(out_flags, arg[2..]) catch {
-                std.debug.print("No such flag: {s}\n", .{arg});
-                return FlagErrs.NoSuchFlag;
-            },
-            .Short  => get_short_flag(out_flags, arg[1..]) catch {
-                std.debug.print("No such flag: {s}\n", .{arg});
-                return FlagErrs.NoSuchFlag;
-            },
-        };
-
-        switch (flag.value) {
-            .Switch => |val| {
-                // Check if the flag is duplicate
-                const default_val = try default_flags.switchval(flag.name);
-
-                if (val != default_val) {
-                    if (!cfg.NoDups) continue;
-
-                    if (cfg.verbose) {
-                        std.debug.print("Duplicate flag: {s}\n", .{ arg });
-                        return FlagErrs.DuplicateFlag;
-                    }
-                }
-
-                try flag.toggle();
-            },
-
-            else    => continue,
+        switch (fmt) {
+            .Short => try parse_chain(arg[1..], out_flags, default_flags, cfg),
+            .Long => try parse_long(arg[2..], out_flags, default_flags, cfg),
         }
     }
 
+    args.index = 0;
     return Flags {
         .list = out_flags
     };
 }
 
-fn flagfmt(arg: []const u8) ?FlagFmt {
+fn parse_long(arg: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConfig) !void {
+    var flag: *Flag = try get_long_flag(flags, arg);
+
+    switch (flag.value) {
+        .Switch => |val| {
+            if (val != try defaults.get(flag.name).?.switchval()) {
+                if (cfg.AllowDups) return;
+                if (cfg.verbose) std.debug.print("{}: {s}\n", .{ FlagErrs.DuplicateFlag, arg });
+                return;
+            }
+
+            try flag.toggle();
+        },
+
+        .Argumentative => return, //debug
+    }
+}
+
+fn parse_chain(chain: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConfig) !void {
+    for (chain) |c| {
+        var flag: *Flag = try get_short_flag(flags, c);
+
+        switch (flag.value) {
+            .Switch => |val| {
+                if (val != try defaults.get(flag.name).?.switchval()) {
+                    if (cfg.AllowDups) continue;
+                    if (cfg.verbose) std.debug.print("{}: {c}\n", .{ FlagErrs.DuplicateFlag, c });
+                    continue;
+                }
+
+                try flag.toggle();
+            },
+
+            .Argumentative => continue, //debug
+        }
+    }
+}
+
+pub fn flagfmt(arg: []const u8) ?FlagFmt {
     if (arg.len < 2) return null;
     if (arg[0] != '-') return null;
 
@@ -177,7 +187,7 @@ fn flagfmt(arg: []const u8) ?FlagFmt {
     return FlagFmt.Short;
 }
 
-fn get_long_flag(flags: []Flag, arg: []const u8) FlagErrs!*Flag {
+pub fn get_long_flag(flags: []Flag, arg: []const u8) FlagErrs!*Flag {
     for (flags) |*flag| {
         if (std.mem.eql(u8, flag.long orelse continue, arg)) return flag;
     }
@@ -186,11 +196,9 @@ fn get_long_flag(flags: []Flag, arg: []const u8) FlagErrs!*Flag {
 }
 
 // Should be updated to work for flag chains
-fn get_short_flag(flags: []Flag, arg: []const u8) FlagErrs!*Flag {
-    for (arg) |c| {
-        for (flags) |*flag| {
-            if (flag.short orelse continue == c) return flag;
-        }
+pub fn get_short_flag(flags: []Flag, arg: u8) FlagErrs!*Flag {
+    for (flags) |*flag| {
+        if (arg == flag.short orelse continue) return flag;
     }
 
     return FlagErrs.NoSuchFlag;
