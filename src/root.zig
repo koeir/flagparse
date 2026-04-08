@@ -129,8 +129,7 @@ pub fn parse(
 
     // Should be compile error really but out_flags must be a runtime var
     if (out_flags.len != init_flags.list.len) {
-        std.debug.print("ERROR: Size of parse result array must match size of init flags array\n", .{});
-        return FlagErrs.IncorrectArrSize;
+        @panic("Size of parse result array must match size of init flags array");
     }
 
     for (init_flags.list, 0..) |value, i| {
