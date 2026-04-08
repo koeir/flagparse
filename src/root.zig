@@ -48,7 +48,6 @@ pub const Flag = struct {
     long:   ?[]const u8,
     short:  ?u8,
     value:  FlagVal,
-    opt:    bool,
     desc:   ?[]const u8,
 
     // Toggles value of Switch type flag

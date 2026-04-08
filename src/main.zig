@@ -27,7 +27,6 @@ const initflags: flag.Flags = .{
                 .name = "recursive",
                 .long = "recursive",
                 .short = 'r',
-                .opt = true,
                 .value = .{ .Switch = false },
                 .desc = "Recurse into directories",
             },
@@ -36,7 +35,6 @@ const initflags: flag.Flags = .{
                 .name = "force",
                 .long = "force",
                 .short = 'f',
-                .opt = true,
                 .value = .{ .Switch = false },
                 .desc = "Skip confirmation prompts",
             },
@@ -45,7 +43,6 @@ const initflags: flag.Flags = .{
                 .name = "file",
                 .long = "path",
                 .short = 'p',
-                .opt = true,
                 // Should not be undef
                 .value = .{ .Argumentative = "" },
                 .desc = "Path to file",
