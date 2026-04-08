@@ -9,6 +9,7 @@ pub fn main() !void {
 
     var args: std.process.ArgIteratorPosix = .init();
 
+    // Make mutable flag array "buffer" in stack
     var flagarr: [initflags.list.len]flag.Flag = undefined;
     const flags = try flag.parse(&args, initflags, &flagarr, .{ .verbose = true });
 
@@ -50,8 +51,9 @@ const initflags: flag.Flags = .{
                 .name = "file",
                 .long = "path",
                 .short = 'p',
-                // Should not be undef
-                .value = .{ .Argumentative = "" },
+                // Argumentative flags should not be initialized as undefined,
+                // instead, make a reference to an empty array of 1024 u8s
+                .value = .{ .Argumentative = &[_]u8{' '} ** 1024 },
                 .desc = "Path to file",
             }
     },

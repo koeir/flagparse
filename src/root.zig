@@ -18,7 +18,7 @@ const FlagType = enum {
 
 const FlagVal = union(FlagType) {
     Switch: bool,
-    Argumentative: []const u8,
+    Argumentative: *const [1024]u8,
 };
 
 pub const Flags = struct {
@@ -140,6 +140,7 @@ pub fn parse(
         @panic("Size of parse result array must match size of init flags array");
     }
 
+    // Initialize the output flags for mutation
     for (init_flags.list, 0..) |value, i| {
         out_flags[i] = value;
     }
@@ -162,7 +163,7 @@ pub fn parse(
 
 // Finds and sets the values for flags that have been called in long form
 fn parse_long(arg: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConfig) !void {
-    var flag: *Flag = try get_long_flag(flags, arg);
+    var flag: *Flag = try get_long_flag(flags, arg, cfg);
 
     switch (flag.value) {
         .Switch => |val| {
@@ -182,7 +183,7 @@ fn parse_long(arg: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConfig)
 // Same thing but for short flags + chained
 fn parse_chain(chain: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConfig) !void {
     for (chain) |c| {
-        var flag: *Flag = try get_short_flag(flags, c);
+        var flag: *Flag = try get_short_flag(flags, c, cfg);
 
         switch (flag.value) {
             .Switch => |val| {
@@ -210,18 +211,20 @@ fn flagfmt(arg: []const u8) ?FlagFmt {
     return FlagFmt.Short;
 }
 
-fn get_long_flag(flags: []Flag, arg: []const u8) FlagErrs!*Flag {
+fn get_long_flag(flags: []Flag, arg: []const u8, cfg: ParseConfig) FlagErrs!*Flag {
     for (flags) |*flag| {
         if (std.mem.eql(u8, flag.long orelse continue, arg)) return flag;
     }
 
+    if (cfg.verbose) std.debug.print("No such flag: --{s}\n", .{ arg });
     return FlagErrs.NoSuchFlag;
 }
 
-fn get_short_flag(flags: []Flag, arg: u8) FlagErrs!*Flag {
+fn get_short_flag(flags: []Flag, arg: u8, cfg: ParseConfig) FlagErrs!*Flag {
     for (flags) |*flag| {
         if (arg == flag.short orelse continue) return flag;
     }
 
+    if (cfg.verbose) std.debug.print("No such flag: -{c}\n", .{ arg });
     return FlagErrs.NoSuchFlag;
 }
