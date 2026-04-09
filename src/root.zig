@@ -130,10 +130,19 @@ pub const Flag = struct {
         self: @This(),
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
-        var padding: usize = 20;
+        var padding: usize = 30;
 
         if (self.short) |short| {
             try writer.print("-{c}", .{ short });
+
+            switch (self.value) {
+                .Argumentative => {
+                    try writer.print(" <{s}>", .{ self.name });
+                    padding -= self.name.len + 3;
+                },
+                else => {},
+            }
+
             padding -= 2;
 
             if (self.long) |_| {
@@ -144,6 +153,13 @@ pub const Flag = struct {
 
         if (self.long) |long| {
             try writer.print("--{s}", .{ long });
+            switch (self.value) {
+                .Argumentative => {
+                    try writer.print(" <{s}>", .{ self.name });
+                    padding -= self.name.len + 3;
+                },
+                else => {},
+            }
             padding -= long.len + 2;
         }
 
