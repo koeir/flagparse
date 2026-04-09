@@ -157,7 +157,7 @@ pub fn parse(
         const fmt: FlagFmt = flagfmt(arg) orelse continue;
 
         switch (fmt) {
-            .Short => try parse_chain(arg[1..], out_flags, init_flags, cfg),
+            .Short => try parse_chain(args, out_flags, init_flags, cfg),
             .Long => try parse_long(args, out_flags, init_flags, cfg),
         }
     }
@@ -202,7 +202,9 @@ fn parse_long(args: *std.process.ArgIteratorPosix, flags: []Flag, comptime defau
 }
 
 // Same thing but for short flags + chained
-fn parse_chain(chain: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConfig) !void {
+fn parse_chain(args: *std.process.ArgIteratorPosix, flags: []Flag, defaults: Flags, cfg: ParseConfig) !void {
+    const chain: [:0]u8 = std.mem.sliceTo(std.os.argv[args.index - 1], 0)[1..:0];
+
     for (chain) |c| {
         var flag: *Flag = try get_short_flag(flags, c, cfg);
 
@@ -217,7 +219,15 @@ fn parse_chain(chain: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConf
                 try flag.toggle();
             },
 
-            .Argumentative => continue, //debug
+            .Argumentative => |*val| { 
+            const next_arg = args.next() orelse {
+                return FlagErrs.ArgNoArg;
+            };
+
+            if (next_arg.len > 1024) return FlagErrs.ArgTooLong;
+
+            @memcpy(val[0..next_arg.len], next_arg);
+        },
         }
     }
 }
