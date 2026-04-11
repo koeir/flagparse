@@ -106,6 +106,16 @@ pub const Flag = struct {
         }
     }
 
+    pub fn set_arg(self: *Flag, arg: []const u8) !void {
+        switch (self.value) {
+            .Switch => |_| return FlagErrs.FlagNotArg,
+            .Argumentative => |*val| {
+                if (arg.len > 1024) return FlagErrs.ArgTooLong;
+                @memcpy(val[0..arg.len], arg);
+            }
+        }
+    }
+
     // Pass on the init Flags struct
     pub fn isDefault(self: *const Self, comptime defaults: Flags) !bool {
         const default = try defaults.try_get(self.name);
@@ -216,34 +226,22 @@ fn parse_long(args: *std.process.ArgIteratorPosix, flags: []Flag, comptime defau
     const flag_arg: [:0]u8 = std.mem.sliceTo(std.os.argv[args.index - 1], 0)[2..:0];
     var flag: *Flag = try get_long_flag(flags, flag_arg, cfg);
 
+    try checkdup(flag, defaults, FlagFmt.Long, cfg);
+
     switch (flag.value) {
         .Switch => |_| {
-            // Check for duplicate flags and handle accordingly
-            if (!try flag.isDefault(defaults)) {
-                if (cfg.AllowDups) return;
-                if (cfg.verbose) std.debug.print("{}: --{s}\n", .{ FlagErrs.DuplicateFlag, flag_arg });
-                return FlagErrs.DuplicateFlag;
-            }
-            // Whether AllowDups is turned on or not, the flag won't be toggled again
-
             // Toggle if not dup
             try flag.toggle();
         },
 
-        .Argumentative => |*val| {
-            if (!try flag.isDefault(defaults)) {
-                if (cfg.AllowDups) return;
-                if (cfg.verbose) std.debug.print("{}: --{s}\n", .{ FlagErrs.DuplicateFlag, flag_arg });
-                return FlagErrs.DuplicateFlag;
-            }
-
+        .Argumentative => |_| {
             const next_arg = args.next() orelse {
                 return FlagErrs.ArgNoArg;
             };
 
-            if (next_arg.len > 1024) return FlagErrs.ArgTooLong;
+            if (next_arg[0] == '-') return FlagErrs.ArgNoArg;
 
-            @memcpy(val[0..next_arg.len], next_arg);
+            try flag.set_arg(next_arg);
         },
     }
 }
@@ -255,33 +253,36 @@ fn parse_chain(args: *std.process.ArgIteratorPosix, flags: []Flag, comptime defa
     for (chain) |c| {
         var flag: *Flag = try get_short_flag(flags, c, cfg);
 
+        try checkdup(flag, defaults, FlagFmt.Short, cfg);
+
         switch (flag.value) {
             .Switch => |_| {
-                if (!try flag.isDefault(defaults)) {
-                    if (cfg.AllowDups) return;
-                    if (cfg.verbose) std.debug.print("{}: -{c}\n", .{ FlagErrs.DuplicateFlag, c });
-                    return FlagErrs.DuplicateFlag;
-                }
-
                 try flag.toggle();
             },
 
-            .Argumentative => |*val| { 
-                if (!try flag.isDefault(defaults)) {
-                    if (cfg.AllowDups) return;
-                    if (cfg.verbose) std.debug.print("{}: -{c}\n", .{ FlagErrs.DuplicateFlag, c });
-                    return FlagErrs.DuplicateFlag;
-                }
-
+            .Argumentative => |_| { 
                 const next_arg = args.next() orelse {
                     return FlagErrs.ArgNoArg;
                 };
 
-                if (next_arg.len > 1024) return FlagErrs.ArgTooLong;
+                if (next_arg[0] == '-') return FlagErrs.ArgNoArg;
 
-                @memcpy(val[0..next_arg.len], next_arg);
+                try flag.set_arg(next_arg);
         },
         }
+    }
+}
+
+fn checkdup(flag: *const Flag, comptime defaults: Flags, fmt: FlagFmt, cfg: ParseConfig) !void {
+    if (!try flag.isDefault(defaults)) {
+        if (cfg.AllowDups) return;
+        if (cfg.verbose) {
+            switch (fmt) {
+                .Long => std.debug.print("{}: --{s}\n", .{ FlagErrs.DuplicateFlag, flag.long.? }),
+                .Short => std.debug.print("{}: -{c}\n", .{ FlagErrs.DuplicateFlag, flag.short.? }),
+            }
+        }
+        return FlagErrs.DuplicateFlag;
     }
 }
 
