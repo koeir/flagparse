@@ -184,18 +184,24 @@ pub const Flag = struct {
 pub const ParseConfig = struct {
     AllowDups: bool = false,
     verbose: bool = false,
+    writer: ?*std.io.Writer = null,
 };
 
+// arg.index is not reset when unsuccessful
 pub fn parse(
     args: *std.process.ArgIteratorPosix,
     comptime init_flags: Flags,
     out_flags: []Flag,
-    comptime cfg: ParseConfig,
+    cfg: ParseConfig,
     ) !Flags {
 
     // Should be compile error really but out_flags must be a runtime var
     if (out_flags.len != init_flags.list.len) {
         @panic("Size of parse result array must match size of init flags array");
+    }
+
+    if (cfg.verbose == true and cfg.writer == null) {
+        @panic("Verbose is set to true and yet no writer is given");
     }
 
     // Initialize the output flags for mutation
@@ -204,12 +210,12 @@ pub fn parse(
     }
 
     if (!args.skip()) return error.NoArgs;
-    while (args.next()) |arg| {
-        const fmt: FlagFmt = flagfmt(arg) orelse continue;
+    while (args.next()) |*arg| {
+        const fmt: FlagFmt = flagfmt(arg.*) orelse continue;
 
         switch (fmt) {
-            .Short => try parse_chain(args, out_flags, init_flags, cfg),
-            .Long => try parse_long(args, out_flags, init_flags, cfg),
+            .Short  => try parse_chain(args, out_flags, init_flags, cfg),
+            .Long   => try parse_long(args, out_flags, init_flags, cfg),
         }
     }
 
@@ -217,7 +223,7 @@ pub fn parse(
     args.index = 0;
 
     return Flags {
-        .list = out_flags
+        .list = out_flags,
     };
 }
 
@@ -239,7 +245,7 @@ fn parse_long(args: *std.process.ArgIteratorPosix, flags: []Flag, comptime defau
                 return FlagErrs.ArgNoArg;
             };
 
-            if (next_arg[0] == '-') return FlagErrs.ArgNoArg;
+            try check_nextarg(flag, next_arg, FlagFmt.Long, cfg);
 
             try flag.set_arg(next_arg);
         },
@@ -265,7 +271,7 @@ fn parse_chain(args: *std.process.ArgIteratorPosix, flags: []Flag, comptime defa
                     return FlagErrs.ArgNoArg;
                 };
 
-                if (next_arg[0] == '-') return FlagErrs.ArgNoArg;
+                try check_nextarg(flag, next_arg, FlagFmt.Short, cfg);
 
                 try flag.set_arg(next_arg);
         },
@@ -273,13 +279,26 @@ fn parse_chain(args: *std.process.ArgIteratorPosix, flags: []Flag, comptime defa
     }
 }
 
+fn check_nextarg(flag: *const Flag, arg: []const u8, fmt: FlagFmt, cfg: ParseConfig) !void {
+    if (arg[0] != '-') return;
+    if (!cfg.verbose) return FlagErrs.ArgNoArg;
+
+    try cfg.writer.?.print("No valid argument supplied for: ", .{});
+    switch (fmt) {
+        .Long => try cfg.writer.?.print("--{s}\n", .{ flag.long.? }),
+        .Short => try cfg.writer.?.print("-{c}\n", .{ flag.short.? }),
+    }
+
+    return FlagErrs.ArgNoArg;
+}
+
 fn checkdup(flag: *const Flag, comptime defaults: Flags, fmt: FlagFmt, cfg: ParseConfig) !void {
     if (!try flag.isDefault(defaults)) {
         if (cfg.AllowDups) return;
         if (cfg.verbose) {
             switch (fmt) {
-                .Long => std.debug.print("{}: --{s}\n", .{ FlagErrs.DuplicateFlag, flag.long.? }),
-                .Short => std.debug.print("{}: -{c}\n", .{ FlagErrs.DuplicateFlag, flag.short.? }),
+                .Long => try cfg.writer.?.print("{}: --{s}\n", .{ FlagErrs.DuplicateFlag, flag.long.? }),
+                .Short => try cfg.writer.?.print("{}: -{c}\n", .{ FlagErrs.DuplicateFlag, flag.short.? }),
             }
         }
         return FlagErrs.DuplicateFlag;
@@ -288,7 +307,7 @@ fn checkdup(flag: *const Flag, comptime defaults: Flags, fmt: FlagFmt, cfg: Pars
 
 // Returns whether if a flag is in long or short form
 // null if it is not a flag
-fn flagfmt(arg: []const u8) ?FlagFmt {
+pub fn flagfmt(arg: []const u8) ?FlagFmt {
     if (arg.len < 2) return null;
     if (arg[0] != '-') return null;
 
@@ -296,20 +315,20 @@ fn flagfmt(arg: []const u8) ?FlagFmt {
     return FlagFmt.Short;
 }
 
-fn get_long_flag(flags: []Flag, arg: []const u8, cfg: ParseConfig) FlagErrs!*Flag {
+pub fn get_long_flag(flags: []Flag, arg: []const u8, cfg: ParseConfig) !*Flag {
     for (flags) |*flag| {
         if (std.mem.eql(u8, flag.long orelse continue, arg)) return flag;
     }
 
-    if (cfg.verbose) std.debug.print("No such flag: --{s}\n", .{ arg });
+    if (cfg.verbose) try cfg.writer.?.print("No such flag: --{s}\n", .{ arg });
     return FlagErrs.NoSuchFlag;
 }
 
-fn get_short_flag(flags: []Flag, arg: u8, cfg: ParseConfig) FlagErrs!*Flag {
+pub fn get_short_flag(flags: []Flag, arg: u8, cfg: ParseConfig) !*Flag {
     for (flags) |*flag| {
         if (arg == flag.short orelse continue) return flag;
     }
 
-    if (cfg.verbose) std.debug.print("No such flag: -{c}\n", .{ arg });
+    if (cfg.verbose) try cfg.writer.?.print("No such flag: -{c}\n", .{ arg });
     return FlagErrs.NoSuchFlag;
 }
