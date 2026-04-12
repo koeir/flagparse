@@ -24,7 +24,7 @@ pub fn main() !void {
         const fmt = flagparse.flagfmt(arg) orelse return;
         var flagtmp: *const flagparse.Type.Flag = undefined;
 
-        try stdout.writeAll("Usage:\n");
+        try stdout.writeAll("\nUsage:\n");
         switch (fmt) {
             .Long   => |_| {
                 flagtmp = flagparse.get_long_flag(&flagarr, arg[2..], .{}) catch { return; };
