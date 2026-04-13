@@ -72,37 +72,51 @@ pub fn main() !void {
 const initflags: flagparse.Type.Flags = .{
     .list = &[_] flagparse.Type.Flag 
     {
-            flagparse.Type.Flag {
-                .name = "recursive",
-                .long = "recursive",
-                .short = 'r',
-                .value = .{ .Switch = false },
-                .desc = "Recurse into directories",
-            },
+        flagparse.Type.Flag {
+            .name = "recursive",
+            .long = "recursive",
+            .short = 'r',
+            .value = .{ .Switch = false },
+            .desc = "Recurse into directories",
+        },
 
-            flagparse.Type.Flag {
-                .name = "force",
-                .long = "force",
-                .short = 'f',
-                .value = .{ .Switch = false },
-                .desc = "Skip confirmation prompts",
-            },
+        flagparse.Type.Flag {
+            .name = "force",
+            .long = "force",
+            .short = 'f',
+            .value = .{ .Switch = false },
+            .desc = "Skip confirmation prompts",
+        },
 
-        // Arguments will accept the next argv
-        // e.g. -prf noob
-        // "noob" will be accepted as the file
-        //
-        // They will however, NOT accept any arg that starts with "-"
-        // e.g. -p -r noob
-        // will yield an error
-            flagparse.Type.Flag {
-                .name = "file",
-                .long = "path",
-                .short = 'p',
-                // Argumentative flags should not be initialized as undefined,
-                // instead, make a reference to array of 1024 u8s
-                .value = .{ .Argumentative = [_:0]u8{0} ** 1024},
-                .desc = "Path to file",
-            }
+    // Arguments will accept the next argv
+    // e.g. -prf noob
+    // "noob" will be accepted as the file
+    //
+    // They will however, NOT accept any arg that starts with "-"
+    // e.g. -p -r noob
+    // will yield an error
+        flagparse.Type.Flag {
+            .name = "file",
+            .long = "path",
+            .short = 'p',
+            // Argumentative flags should not be initialized as undefined,
+            // instead, make a reference to array of 1024 u8s
+            .value = .{ .Argumentative = [_:0]u8{0} ** 1024 },
+            .desc = "Path to file",
+        },
+
+        flagparse.Type.Flag {
+            .name = "hi",
+            .short = 'h',
+            .desc = "hello",
+            .value = .{ .Switch = false }
+        },
+        flagparse.Type.Flag {
+            .name = "hello",
+            .long = "hello",
+            .desc = "hi",
+            .value = .{  .Argumentative = [_:0]u8{0} ** 1024 }
+        },
     },
+    
 };

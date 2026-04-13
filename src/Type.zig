@@ -94,10 +94,10 @@ pub const Flag = struct {
     const Self = @This();
 
     name:   []const u8,
-    long:   ?[]const u8,
-    short:  ?u8,
+    long:   ?[]const u8 = null,
+    short:  ?u8 = null,
     value:  FlagVal,
-    desc:   ?[]const u8,
+    desc:   ?[]const u8 = null,
 
     pub var padding: u64 = 30;
 
@@ -148,6 +148,7 @@ pub const Flag = struct {
 
         if (self.short) |short| {
             try writer.print("-{c}", .{ short });
+            tmp_padding -= 2;
 
             switch (self.value) {
                 .Argumentative => {
@@ -157,12 +158,13 @@ pub const Flag = struct {
                 else => {},
             }
 
-            tmp_padding -= 2;
-
             if (self.long) |_| {
                 try writer.writeAll(", ");
                 tmp_padding -= 2;
             }
+        } else {
+            try writer.writeAll("    ");
+            tmp_padding -= 4;
         }
 
         if (self.long) |long| {
