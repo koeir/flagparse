@@ -16,7 +16,9 @@ pub fn main() !void {
 
     // Make mutable flagparse array "buffer" in stack
     var flagarr: [initflags.list.len]flagparse.Type.Flag = undefined;
+    // actual parse
     const flags = flagparse.parse(&args, initflags, &flagarr, 
+    // "Usage" output when parse fails
     .{ .AllowDups = false, .verbose = true, .writer = stderr }) catch |err| {
         if (err != flagparse.Type.FlagErrs.ArgNoArg) return;
 
