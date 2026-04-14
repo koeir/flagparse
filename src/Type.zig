@@ -1,5 +1,5 @@
-pub const std = @import("std");
-pub const root = @import("root.zig");
+const std = @import("std");
+const root = @import("root.zig");
 
 pub const FlagErrs = error {
     NoArgs,
