@@ -26,6 +26,7 @@ pub fn parse_long(
 
         .Argumentative => |_| {
             const next_arg = args.next() orelse {
+                if (cfg.prefix) |prefix| try cfg.writer.?.print("{s}", .{ prefix } );
                 try cfg.writer.?.print("No argument supplied for --{s}\n", .{ flag.long.? });
                 return FlagErrs.ArgNoArg;
             };
@@ -59,6 +60,8 @@ pub fn parse_chain(
 
             .Argumentative => |_| {
                 const next_arg = args.next() orelse {
+                    if (cfg.prefix) |prefix| 
+                        try cfg.writer.?.print("{s}", .{ prefix } );
                     try cfg.writer.?.print("No argument supplied for -{c}\n", .{ flag.short.? });
                     return FlagErrs.ArgNoArg;
                 };
@@ -81,12 +84,13 @@ pub fn check_nextarg(
     if (arg[0] != '-' or cfg.allowDashAsFirstCharInArgForArg) return;
     if (!cfg.verbose) return FlagErrs.ArgNoArg;
 
+    if (cfg.prefix) |prefix| 
+        try cfg.writer.?.print("{s}", .{ prefix } );
     try cfg.writer.?.print("'{s}' is not a valid argument supplied for: ", .{ arg });
     switch (fmt) {
         .Long => try cfg.writer.?.print("--{s}\n", .{ flag.long.? }),
         .Short => try cfg.writer.?.print("-{c}\n", .{ flag.short.? }),
     }
-
 
     return FlagErrs.ArgNoArg;
 }
@@ -100,13 +104,14 @@ pub fn checkdup(
 
     if (!try flag.isDefault(defaults)) {
         if (cfg.allowDups) return;
-        if (cfg.verbose) {
-            switch (fmt) {
-                .Long => try cfg.writer.?.print("{}: --{s}\n",
-                    .{ FlagErrs.DuplicateFlag, flag.long.? }),
-                .Short => try cfg.writer.?.print("{}: -{c}\n", .{ 
-                    FlagErrs.DuplicateFlag, flag.short.? }),
-            }
+        if (!cfg.verbose) return FlagErrs.DuplicateFlag;
+        if (cfg.prefix) |prefix|
+            try cfg.writer.?.print("{s}", .{ prefix } );
+        switch (fmt) {
+            .Long => try cfg.writer.?.print("{}: --{s}\n",
+                .{ FlagErrs.DuplicateFlag, flag.long.? }),
+            .Short => try cfg.writer.?.print("{}: -{c}\n", .{ 
+                FlagErrs.DuplicateFlag, flag.short.? }),
         }
 
         return FlagErrs.DuplicateFlag;
@@ -118,7 +123,12 @@ pub fn get_long_flag(flags: []root.Type.Flag, arg: []const u8, cfg: root.Type.Pa
         if (std.mem.eql(u8, flag.long orelse continue, arg)) return flag;
     }
 
-    if (cfg.verbose) try cfg.writer.?.print("No such flag: --{s}\n", .{ arg });
+    if (!cfg.verbose) return root.Type.FlagErrs.NoSuchFlag;
+
+    if (cfg.prefix) |prefix|
+        try cfg.writer.?.print("{s}", .{ prefix } );
+    try cfg.writer.?.print("No such flag: --{s}\n", .{ arg });
+
     return root.Type.FlagErrs.NoSuchFlag;
 }
 
@@ -127,6 +137,10 @@ pub fn get_short_flag(flags: []root.Type.Flag, arg: u8, cfg: root.Type.ParseConf
         if (arg == flag.short orelse continue) return flag;
     }
 
-    if (cfg.verbose) try cfg.writer.?.print("No such flag: -{c}\n", .{ arg });
+    if (!cfg.verbose) return root.Type.FlagErrs.NoSuchFlag;
+
+    if (cfg.prefix) |prefix|
+        try cfg.writer.?.print("{s}", .{ prefix } );
+    try cfg.writer.?.print("No such flag: -{c}\n", .{ arg });
     return root.Type.FlagErrs.NoSuchFlag;
 }

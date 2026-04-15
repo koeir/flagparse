@@ -24,7 +24,7 @@ pub fn main() !void {
     // actual parse, returns a tuple of Flags and resulting args
     const result = flagparse.parse(&args, argbuf[0..], initflags, &flagarr, 
     // "Usage" output when parse fails
-    .{ .allowDups = false, .verbose = true, .writer = stderr }) catch |err| {
+    .{ .allowDups = false, .verbose = true, .writer = stderr, .prefix = "my-program: " }) catch |err| {
         if (err != flagparse.Type.FlagErrs.ArgNoArg) return;
 
         const arg: []const u8 = std.mem.sliceTo(std.os.argv[args.index - 1], 0);
