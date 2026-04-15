@@ -10,6 +10,7 @@ A simple flag parser for POSIX-compliant Zig programs.
 ## Config Options
 - **allowDups**: Don't error when duplicate flags are set. *Default is false*.
 - **verbose**: Print out error messages when errors occur. *Default is false*.
+- **prefix**: Print out a custom string for verbose messages. *Default is null*.
 - **writer**: Required when using verbose option. Doesn't really do anything without it. *Default is null*.
 - **allowDashAsFirstCharInArgForArg**: I admit this needs a better name. It allows argumentative type flags (meaning flags that hold a string/arg) to hold strings that begin with "-". *Default is true*.
 
