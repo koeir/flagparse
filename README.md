@@ -1,10 +1,17 @@
 # flagparse
-A simple Zig flag parser for POSIX-compliant programs.
+A simple flag parser for POSIX-compliant Zig programs.
 
+## Features
 - No heap allocation
 - Formatted printing
 - Simple interface
 - Returns argv list without flags
+
+## Config Options
+- **allowDups**: Don't error when duplicate flags are set. *Default is false*.
+- **verbose**: Print out error messages when errors occur. *Default is false*.
+- **writer**: Required when using verbose option. Doesn't really do anything without it. *Default is null*.
+- **allowDashAsFirstCharInArgForArg**: I admit this needs a better name. It allows argumentative type flags (meaning flags that hold a string/arg) to hold strings that begin with "-". *Default is true*.
 
 ## Usage
 1. Declare a list of flags with the built-in structs
