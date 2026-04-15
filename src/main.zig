@@ -18,6 +18,8 @@ pub fn main() !void {
     var flagarr: [initflags.list.len]flagparse.Type.Flag = undefined;
     // Make buffer for argv list omitting flags AND arguments for flags
     // can be any size; parse fails if args.count > argbuf.len
+    //
+    // upon parsing, this points to args in std.os.argv
     var argbuf: [20][:0]const u8 = undefined;
     // actual parse, returns a tuple of Flags and resulting args
     const result = flagparse.parse(&args, argbuf[0..], initflags, &flagarr, 
@@ -102,13 +104,13 @@ const initflags: flagparse.Type.Flags = .{
             .desc = "Skip confirmation prompts",
         },
 
-    // Arguments will accept the next argv
-    // e.g. -prf noob
-    // "noob" will be accepted as the file
-    //
-    // They will however, NOT accept any arg that starts with "-"
-    // e.g. -p -r noob
-    // will yield an error
+        // Arguments will accept the next argv
+        // e.g. -prf noob
+        // "noob" will be accepted as the file
+        //
+        // They will however, NOT accept any arg that starts with "-"
+        // e.g. -p -r noob
+        // will yield an error
         .{
             .name = "file",
             .long = "path",
