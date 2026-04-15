@@ -18,6 +18,8 @@ pub fn parse(
 
     if (cfg.verbose == true and cfg.writer == null) {
         @panic("Verbose is set to true and yet no writer is given");
+    } else {
+        defer cfg.writer.?.flush() catch {};
     }
 
     // Initialize the output flags for mutation
