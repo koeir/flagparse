@@ -16,8 +16,11 @@ pub fn main() !void {
 
     // Make mutable flagparse array "buffer" in stack
     var flagarr: [initflags.list.len]flagparse.Type.Flag = undefined;
-    // actual parse
-    const flags = flagparse.parse(&args, initflags, &flagarr, 
+    // Make buffer for argv list omitting flags AND arguments for flags
+    // can be any size; parse fails if args.count > argbuf.len
+    var argbuf: [20][:0]const u8 = undefined;
+    // actual parse, returns a tuple of Flags and resulting args
+    const result = flagparse.parse(&args, argbuf[0..], initflags, &flagarr, 
     // "Usage" output when parse fails
     .{ .allowDups = false, .verbose = true, .writer = stderr }) catch |err| {
         if (err != flagparse.Type.FlagErrs.ArgNoArg) return;
@@ -44,6 +47,9 @@ pub fn main() !void {
         return;
     };
 
+    const flags = result.flags;
+    const flagless_args = result.argv;
+
     try stdout.writeAll("Toggled flags:\n");
     // Formatted print for each flagparse
     for (flags.list) |f| {
@@ -66,6 +72,12 @@ pub fn main() !void {
     try stdout.writeAll("\n");
     try stdout.writeAll("Options:\n");
     try stdout.print("{f}", .{ initflags });
+
+    try stdout.writeAll("\n");
+    try stdout.writeAll("Flagless argv list:\n");
+    for (flagless_args) |argv| {
+        try stdout.print("{s}\n", .{ argv });
+    }
 }
 
 // Initialize flags and their default values
@@ -74,7 +86,7 @@ pub fn main() !void {
 const initflags: flagparse.Type.Flags = .{
     .list = &[_] flagparse.Type.Flag 
     {
-        flagparse.Type.Flag {
+        .{
             .name = "recursive",
             .long = "recursive",
             .short = 'r',
@@ -82,7 +94,7 @@ const initflags: flagparse.Type.Flags = .{
             .desc = "Recurse into directories",
         },
 
-        flagparse.Type.Flag {
+        .{
             .name = "force",
             .long = "force",
             .short = 'f',
@@ -97,7 +109,7 @@ const initflags: flagparse.Type.Flags = .{
     // They will however, NOT accept any arg that starts with "-"
     // e.g. -p -r noob
     // will yield an error
-        flagparse.Type.Flag {
+        .{
             .name = "file",
             .long = "path",
             .short = 'p',
@@ -107,13 +119,13 @@ const initflags: flagparse.Type.Flags = .{
             .desc = "Path to file",
         },
 
-        flagparse.Type.Flag {
+        .{
             .name = "hi",
             .short = 'h',
             .desc = "hello",
             .value = .{ .Switch = false }
         },
-        flagparse.Type.Flag {
+        .{
             .name = "hello",
             .long = "hello",
             .desc = "hi",

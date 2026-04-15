@@ -5,10 +5,11 @@ pub const Type = @import("Type.zig");
 // arg.index is not reset when unsuccessful
 pub fn parse(
     args: *std.process.ArgIteratorPosix,
+    argbuf: [][:0]const u8,
     comptime init_flags: Type.Flags,
     out_flags: []Type.Flag,
     cfg: Type.ParseConfig,
-    ) !Type.Flags {
+    ) !struct { flags: Type.Flags, argv: [][:0]const u8 } {
 
     // Should be compile error really but out_flags must be a runtime var
     if (out_flags.len != init_flags.list.len) {
@@ -24,9 +25,33 @@ pub fn parse(
         out_flags[i] = value;
     }
 
+    // Init struct for simpler syntax
+    const OutArgs = struct {
+        arg: [][:0]const u8,
+        index: usize = 0,
+    };
+
+    // Use buffer
+    var out_args: OutArgs = .{
+        .arg = argbuf,
+    };
+
+    if (args.count > argbuf.len) {
+        @panic("Wow! That's a lot of args. Too many, in fact.");
+    }
+
     if (!args.skip()) return error.NoArgs;
     while (args.next()) |*arg| {
-        const fmt: Type.FlagFmt = flagfmt(arg.*) orelse continue;
+        const fmt: Type.FlagFmt = flagfmt(arg.*) orelse {
+            // If it isn't a flag, add it to out_args and continue
+            //
+            // note that if the current flag is an argumentative,
+            // it takes the next arg, which wouldn't go into this
+            // slice
+            out_args.arg[out_args.index] = arg.*;
+            out_args.index += 1;
+            continue;
+        };
 
         switch (fmt) {
             .Short  => helpers.parse_chain(args, out_flags, init_flags, cfg) catch |err| {
@@ -51,9 +76,11 @@ pub fn parse(
     // Reset the iterator when successful
     args.index = 0;
 
-    return Type.Flags {
+    const ret: Type.Flags = .{
         .list = out_flags,
     };
+
+    return .{ .flags = ret, .argv = out_args.arg[0..out_args.index] };
 }
 
 // Returns whether if a flag is in long or short form
