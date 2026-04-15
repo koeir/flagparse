@@ -1,5 +1,5 @@
 # flagparse
-A simple flag parser for Zig.
+A simple Zig flag parser for POSIX-compliant programs.
 
 - No heap allocation
 - Formatted printing
