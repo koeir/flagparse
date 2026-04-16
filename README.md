@@ -15,7 +15,31 @@ A simple flag parser for POSIX-compliant Zig programs.
 - **allowDashAsFirstCharInArgForArg**: I admit this needs a better name. It allows argumentative type flags (meaning flags that hold a string/arg) to hold strings that begin with "-". *Default is true*.
 
 ## Usage
-1. Declare a list of flags with the built-in structs
+1. Fetch with zig and add as module in build.zig
+```zsh
+zig fetch --save https://github.com/koeir/flagparse/releases/tag/v0.2.1
+```
+```zig
+    // build.zig
+    const flagparse = b.dependency("flagparse", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const exe = b.addExecutable(.{
+        .name = "example",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = target,
+            .optimize = optimize,
+        })
+    });
+
+    exe.root_module.addImport("flagparse", flagparse.module("flagparse"));
+    b.installArtifact(exe);
+```
+
+2. Declare a list of flags with the built-in structs
 ``` zig
 const initflags: flagparse.Type.Flags = .{
     .list = &[_] flagparse.Type.Flag 
@@ -48,7 +72,7 @@ const initflags: flagparse.Type.Flags = .{
 
 ```
 
-2. Initialize posix argument iterator and buffers
+3. Initialize posix argument iterator and buffers
 ``` zig
 const std = @import("std");
 const flagparse = @import("flagparse");
@@ -63,7 +87,7 @@ pub fn main() !void {
 
 ```
 
-3. Parse
+4. Parse
 ``` zig
 const std = @import("std");
 const flagparse = @import("flagparse");
@@ -85,7 +109,7 @@ pub fn main() !void {
 
 ```
 
-4. Use
+5. Use
 ```zig
     ...
     const recursive: bool = try flags.get_value("recursive", bool);
