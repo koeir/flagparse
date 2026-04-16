@@ -1,6 +1,6 @@
 # flagparse
 
-A simple flag parser for POSIX-compliant Zig programs.
+A simple flag parser for Zig programs.
 
 ## Features
 
@@ -138,8 +138,8 @@ pub fn main() !void {
 
 ```zig
 pub const FlagErrs = error {
-    NoArgs,             // I don't think this error would be triggered under normal circumstances. It is only returned 
-                        // when skipping over argv[0] returns false.
+    NoArgs,             // I don't think this error would be triggered under normal circumstances.
+                        // It is only returned when skipping over argv[0] returns false.
     NoSuchFlag,         // unrecognized flag in arg list
     FlagNotSwitch,      // non-switch/non-bool Flag treated as a switch/bool
     FlagNotArg,         // non-argumentative flag treated as an argumentative
