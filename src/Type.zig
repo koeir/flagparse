@@ -9,6 +9,9 @@ pub const FlagErrs = error {
     DuplicateFlag,
     ArgNoArg,           // no argument given to argumentative flag
     ArgTooLong,
+    OutOfMemory,
+    NoWriter,
+    FlagTypeMismatch,
 };
 
 pub const FlagFmt = enum {
@@ -77,21 +80,13 @@ pub const Flags = struct {
         return switch (flag.value) {
             .Switch => |val| {
                 if (@TypeOf(val) != T) { 
-                    @panic(
-                        "type provided does not match the retrieved flag's type\n" ++
-                        "hint: tried to retrieve the value of '" ++ name ++ "' as '" ++ @typeName(T) ++
-                        "' when '" ++ name ++ "' is '" ++ @typeName(@TypeOf(val)) ++ "'"
-                    ); 
+                    return FlagErrs.FlagTypeMismatch;
                 }
                 return val;
             },
             .Argumentative => |val| {
                 if (@TypeOf(val) != T) { 
-                    @panic(
-                        "type provided does not match the retrieved flag's type\n" ++
-                        "hint: tried to retrieve the value of '" ++ name ++ "' as '" ++ @typeName(T) ++
-                        "' when '" ++ name ++ "' is '" ++ @typeName(@TypeOf(val)) ++ "'"
-                    ); 
+                    return FlagErrs.FlagTypeMismatch;
                 }
                 return val;
             }

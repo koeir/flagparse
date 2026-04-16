@@ -13,11 +13,11 @@ pub fn parse(
 
     // Should be compile error really but out_flags must be a runtime var
     if (out_flags.len != init_flags.list.len) {
-        @panic("Size of parse result array must match size of init flags array");
+        return error.OutOfMemory;
     }
 
     if (cfg.verbose == true and cfg.writer == null) {
-        @panic("Verbose is set to true and yet no writer is given");
+        return error.NoWriter;
     } else {
         defer cfg.writer.?.flush() catch {};
     }
@@ -39,7 +39,7 @@ pub fn parse(
     };
 
     if (args.count > argbuf.len) {
-        @panic("Wow! That's a lot of args. Too many, in fact.");
+        return error.OutOfMemory;
     }
 
     if (!args.skip()) return error.NoArgs;
