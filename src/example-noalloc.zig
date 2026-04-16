@@ -1,45 +1,49 @@
 const std = @import("std");
 const flagparse = @import("flagparse");
 
-pub fn main() !void {
-    var stderr_buf: [1024]u8 = undefined;
-    var stderr_writer = std.fs.File.stderr().writer(&stderr_buf);
+pub fn main(init: std.process.Init) !void {
+    const io = init.io;
+    const min = init.minimal;
+
+    var stderr_writer: std.Io.File.Writer = .init( .stderr(), io, &.{});
     const stderr = &stderr_writer.interface;
     defer stderr.flush() catch {};
 
-    var stdout_buf: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buf);
+    var stdout_writer: std.Io.File.Writer = .init( .stdout(), io, &.{});
     const stdout = &stdout_writer.interface;
     defer stdout.flush() catch {};
 
-    var args: std.process.ArgIteratorPosix = .init();
-
     // Make mutable flagparse array "buffer" in stack
     var flagarr: [initflags.list.len]flagparse.Type.Flag = undefined;
+    
     // Make buffer for argv list omitting flags AND arguments for flags
     // can be any size; parse fails if args.count > argbuf.len
     //
     // upon parsing, this points to args in std.os.argv
     var argbuf: [20][:0]const u8 = undefined;
+
+    // Stores the flag that erred
+    var errorbuf: [256]u8 = undefined;
+
     // actual parse, returns a tuple of Flags and resulting args
-    const result = flagparse.parse(&args, argbuf[0..], initflags, &flagarr, 
-    // "Usage" output when parse fails
+    const result = flagparse.parse(&min.args, argbuf[0..], initflags, &flagarr, &errorbuf,
     .{ .allowDups = false, .verbose = true, .writer = stderr, .prefix = "my-program: " }) catch |err| {
         if (err != flagparse.Type.FlagErrs.ArgNoArg) return;
 
-        const arg: []const u8 = std.mem.sliceTo(std.os.argv[args.index - 1], 0);
+        const arg: []const u8 = &errorbuf;
         const fmt = flagparse.flagfmt(arg) orelse return;
         var flagtmp: *const flagparse.Type.Flag = undefined;
 
+        // "Usage" output when parse fails
         try stdout.writeAll("Usage:\n");
         switch (fmt) {
-            .Long   => |_| {
+            .Long   => {
                 flagtmp = initflags.get_with_flag(arg[2..]).?;
                 try stdout.print("{f}\n", .{ flagtmp.* });
             },
-            .Short  => |_| {
+            .Short  => {
                 for (arg[1..]) |c| {
-                    flagtmp = initflags.get_with_flag(&[_]u8 {c}).?;
+                    flagtmp = initflags.get_with_flag(&[_]u8 {c}) orelse continue;
                     try stdout.print("{f}\n", .{ flagtmp.* });
                 }
             }
