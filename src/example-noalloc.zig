@@ -19,10 +19,11 @@ pub fn main(init: std.process.Init) !void {
     // Make buffer for argv list omitting flags AND arguments for flags
     // can be any size; parse fails if args.count > argbuf.len
     //
-    // upon parsing, this points to args in std.os.argv
+    // upon parsing, this points to init.min.args
     var argbuf: [20][:0]const u8 = undefined;
 
-    // Stores the flag that erred
+    // Stores the flag that erred, 256 is pretty overkill as it is only populated
+    // with a flag's .long/.short
     var errorbuf: [256]u8 = undefined;
 
     // actual parse, returns a tuple of Flags and resulting args
