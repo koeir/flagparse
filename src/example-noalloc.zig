@@ -122,7 +122,7 @@ const initflags: flagparse.Type.Flags = .{
             .short = 'p',
             // Argumentative flags should not be initialized as undefined,
             // instead, make a reference to array of 1024 u8s
-            .value = .{ .Argumentative = [_:0]u8{0} ** 1024 },
+            .value = .{ .Argumentative = .{0} ** 1024 },
             .desc = "Path to file",
         },
 
@@ -136,7 +136,7 @@ const initflags: flagparse.Type.Flags = .{
             .name = "hello",
             .long = "hello",
             .desc = "hi",
-            .value = .{  .Argumentative = [_:0]u8{0} ** 1024 }
+            .value = .{  .Argumentative = .{0} ** 1024 }
         },
     },
     
