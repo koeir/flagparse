@@ -49,8 +49,9 @@ pub fn main(init: std.process.Init) !void {
         return;
     };
 
+    // retrieve tuple values
     const flags: flagparse.Type.Flags = result.flags;
-    defer gpa.allocator().free(flags.list);
+    defer flags.deinit(&gpa.allocator());
 
     const flagless_args = result.argv;
     if (flagless_args) |args| {

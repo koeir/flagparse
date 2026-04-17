@@ -162,6 +162,10 @@ pub const Flags = struct {
         };
     }
 
+    pub fn deinit(self: *const Self, allocator: *const std.mem.Allocator) void {
+        allocator.free(self.list);
+    }
+
     pub fn format(
         self: @This(),
         writer: *std.Io.Writer,

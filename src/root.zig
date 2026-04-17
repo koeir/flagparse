@@ -53,6 +53,7 @@ pub fn parse(
         }
     }
 
+    // shrink out_args because it's guaranteed to be <= args
     try out_args.resize(allocator);
 
     const ret: Type.Flags = .{
