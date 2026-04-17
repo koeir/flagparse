@@ -50,12 +50,8 @@ pub fn parse(
         };
 
         switch (fmt) {
-            .Short => helpers.parse_chain(&args_iter, out_flags, init_flags, cfg) catch |err| {
-                return err;
-            },
-            .Long => helpers.parse_long(&args_iter, out_flags, init_flags, cfg) catch |err| {
-                return err;
-            },
+            .Short => try helpers.parse_chain(&args_iter, out_flags, init_flags, cfg),
+            .Long => try helpers.parse_long(&args_iter, out_flags, init_flags, cfg)
         }
     }
 
