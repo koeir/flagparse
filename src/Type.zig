@@ -1,6 +1,43 @@
 const std = @import("std");
 const root = @import("root.zig");
 
+
+// Init struct for simpler syntax
+pub const OutArgs = struct {
+    args: ?[][:0]const u8 = null,
+    index: usize = 0,
+
+    pub fn add_arg(
+        self: *@This(), 
+        a: *const std.mem.Allocator, 
+        arg: [:0]const u8,
+        og_arglist: *const std.process.Args,
+    ) !void {
+        // Allocate memory if it doesn't exist yet
+        if (self.args == null) {
+            self.args = try a.alloc([:0]const u8, og_arglist.vector.len);
+        }
+
+        self.args.?[self.index] = arg;
+        self.index += 1;
+    }
+
+    pub fn resize(
+        self: *@This(),
+        a: *const std.mem.Allocator
+    ) !void {
+        if (self.args) |*value| {
+            value.* = try a.realloc(value.*, self.count());
+        }
+    }
+
+    pub fn count(self: *@This()) usize {
+        if (self.args == null) return 0;
+
+        return self.index;
+    }
+};
+
 pub const FlagErrs = error {
     NoArgs,
     NoSuchFlag,

@@ -2,14 +2,14 @@ const std = @import("std");
 const helpers = @import("helpers.zig");
 pub const Type = @import("Type.zig");
 
-// arg.index is not reset when unsuccessful
+// Memory returned must be freed
 pub fn parse(
-    allocator: *std.mem.Allocator,
+    allocator: *const std.mem.Allocator,
     args: *const std.process.Args,
     comptime init_flags: Type.Flags,
-    errorbuf: ?[]u8,
+    errptr: *[*:0]const u8,
     cfg: Type.ParseConfig,
-) !struct { flags: Type.Flags, argv: *[]*[:0]const u8 } {
+) !struct { flags: Type.Flags, argv: ?[][:0]const u8 } {
     if (cfg.verbose == true and cfg.writer == null) return error.NoWriter;
     defer cfg.writer.?.flush() catch {};
 
@@ -24,55 +24,42 @@ pub fn parse(
     var out_flags = try allocator.alloc(Type.Flag, init_flags.list.len);
     for (init_flags.list, 0..) |value, i| out_flags[i] = value;
 
-    // argbuf for args array without flags
-    var argbuf = try allocator.alloc(*[:0]u8, args.vector.len);
-
-    // Init struct for simpler syntax
-    const OutArgs = struct {
-        arg: []*[:0]const u8,
-        index: usize = 0,
-
-        pub fn add_arg(self: *@This(), arg: *[:0]const u8) void {
-            self.arg[self.index] = arg;
-            self.index += 1;
-        }
-    };
-
     // Use buffer
-    var out_args: OutArgs = .{
-        .arg = &argbuf,
-    };
+    var out_args = Type.OutArgs{};
+
+    // put current arg in iteration in errptr on error
+    errdefer errptr.* = args_iter.args.vector[args_iter.index-1];
 
     if (!args_iter.skip()) return error.NoArgs;
-    while (args_iter.next()) |*arg| {
-        const fmt: Type.FlagFmt = flagfmt(arg.*) orelse {
+    while (args_iter.next()) |arg| {
+        const fmt: Type.FlagFmt = flagfmt(arg) orelse {
             // If it isn't a flag, add it to out_args and continue
             //
             // note that if the current flag is an argumentative,
             // it takes the next arg, which wouldn't go into this
             // slice
 
-            out_args.add_arg(arg);
+            try out_args.add_arg(allocator, arg, args);
             continue;
         };
 
         switch (fmt) {
             .Short => helpers.parse_chain(&args_iter, out_flags, init_flags, cfg) catch |err| {
-                try helpers.put_error(&errorbuf, err, &args_iter);
                 return err;
             },
             .Long => helpers.parse_long(&args_iter, out_flags, init_flags, cfg) catch |err| {
-                try helpers.put_error(&errorbuf, err, &args_iter);
                 return err;
             },
         }
     }
 
+    try out_args.resize(allocator);
+
     const ret: Type.Flags = .{
         .list = out_flags,
     };
 
-    return .{ .flags = ret, .argv = &out_args.arg };
+    return .{ .flags = ret, .argv = out_args.args };
 }
 
 // Returns whether if a flag is in long or short form

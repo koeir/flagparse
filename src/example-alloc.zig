@@ -13,25 +13,19 @@ pub fn main(init: std.process.Init) !void {
     const stdout = &stdout_writer.interface;
     defer stdout.flush() catch {};
 
-    // Make mutable flagparse array "buffer" in stack
-    var flagarr: [initflags.list.len]flagparse.Type.Flag = undefined;
+    var fba_buf: [10000]u8 = undefined;
+    var fba: std.heap.FixedBufferAllocator = .init(&fba_buf);
     
-    // Make buffer for argv list omitting flags AND arguments for flags
-    // can be any size; parse fails if args.count > argbuf.len
-    //
-    // upon parsing, this points to init.min.args
-    var argbuf: [20][:0]const u8 = undefined;
-
-    // Stores the flag that erred, 256 is pretty overkill as it is only populated
-    // with a flag's .long/.short
-    var errorbuf: [256]u8 = undefined;
+    // points to last arg on error
+    // not necessarily the arg that caused the error
+    var errptr: [*:0]const u8 = undefined;
 
     // actual parse, returns a tuple of Flags and resulting args
-    const result = flagparse.parse(&min.args, argbuf[0..], initflags, &flagarr, &errorbuf,
+    const result = flagparse.parse(&fba.allocator(), &min.args, initflags, &errptr,
     .{ .allowDups = false, .verbose = true, .writer = stderr, .prefix = "my-program: " }) catch |err| {
         if (err != flagparse.Type.FlagErrs.ArgNoArg) return;
 
-        const arg: []const u8 = &errorbuf;
+        const arg: []const u8 = std.mem.span(errptr);
         const fmt = flagparse.flagfmt(arg) orelse return;
         var flagtmp: *const flagparse.Type.Flag = undefined;
 
@@ -81,8 +75,11 @@ pub fn main(init: std.process.Init) !void {
 
     try stdout.writeAll("\n");
     try stdout.writeAll("Flagless argv list:\n");
-    for (flagless_args) |argv| {
-        try stdout.print("{s}\n", .{ argv });
+
+    if (flagless_args) |args| {
+        for (args) |value| {
+            try stdout.print("{s}\n", .{ value });
+        }
     }
 }
 
