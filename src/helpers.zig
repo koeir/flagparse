@@ -24,8 +24,11 @@ pub fn parse_long(
 
         .Argumentative => {
             const next_arg = args.next() orelse {
+                if (!cfg.verbose) return FlagErrs.ArgNoArg;
+
                 if (cfg.prefix) |prefix| try cfg.writer.?.print("{s}", .{prefix});
                 try cfg.writer.?.print("No argument supplied for --{s}\n", .{flag.long.?});
+
                 return FlagErrs.ArgNoArg;
             };
 
@@ -57,9 +60,12 @@ pub fn parse_chain(
 
             .Argumentative => {
                 const next_arg = args.next() orelse {
+                    if (!cfg.verbose) return FlagErrs.ArgNoArg;
+
                     if (cfg.prefix) |prefix|
                         try cfg.writer.?.print("{s}", .{prefix});
                     try cfg.writer.?.print("No argument supplied for -{c}\n", .{flag.short.?});
+
                     return FlagErrs.ArgNoArg;
                 };
 
@@ -99,6 +105,7 @@ pub fn checkdup(
     if (!try flag.isDefault(defaults)) {
         if (cfg.allowDups) return;
         if (!cfg.verbose) return FlagErrs.DuplicateFlag;
+
         if (cfg.prefix) |prefix|
             try cfg.writer.?.print("{s}", .{prefix});
         switch (fmt) {
@@ -142,6 +149,7 @@ pub fn get_short_flag(
     if (cfg.prefix) |prefix|
         try cfg.writer.?.print("{s}", .{prefix});
     try cfg.writer.?.print("No such flag: -{c}\n", .{arg});
+
     return root.Type.FlagErrs.NoSuchFlag;
 }
 
