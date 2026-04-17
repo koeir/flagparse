@@ -10,10 +10,8 @@ pub fn parse(
     errptr: *[*:0]const u8,
     cfg: Type.ParseConfig,
 ) !struct { flags: Type.Flags, argv: ?[][:0]const u8 } {
-    if (cfg.verbose == true and cfg.writer == null) {
-        return error.NoWriter;
-    }
-    defer if (cfg.writer) |w| w.flush() catch {};
+    if (cfg.verbose == true and cfg.writer == null) return error.NoWriter;
+    defer if (cfg.verbose) cfg.writer.?.flush()catch{};
 
     var iter = args.iterate();
     var args_iter: Type.ArgIterator = .{
