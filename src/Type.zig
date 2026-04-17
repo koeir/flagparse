@@ -56,15 +56,15 @@ pub const FlagFmt = enum {
 
 // Type aliases
 pub const Switch = bool;
-pub const Argumentative = [1024:0]u8;
+pub const Argumentative = ?[:0]const u8;
 
 pub const FlagType = enum {
     Switch, Argumentative
 };
 
 pub const FlagVal = union(FlagType) {
-    Switch: bool,                   // On/off
-    Argumentative: [1024:0]u8, // Takes an argument
+    Switch: bool,                 // On/off
+    Argumentative: ?[:0]const u8, // Takes an argument
     
     pub fn format(
         self: @This(),
@@ -72,7 +72,7 @@ pub const FlagVal = union(FlagType) {
     ) std.Io.Writer.Error!void {
         switch (self) {
             .Switch => |val| try writer.print("{}", .{ val }),
-            .Argumentative => |val| try writer.print("{s}", .{ val }),
+            .Argumentative => |val| try writer.print("{s}", .{ val.? }),
         }
     }
 };
@@ -197,12 +197,11 @@ pub const Flag = struct {
         }
     }
 
-    pub fn set_arg(self: *Flag, arg: []const u8) !void {
+    pub fn set_arg(self: *Flag, arg: [:0]const u8) !void {
         switch (self.value) {
             .Switch => return FlagErrs.FlagNotArg,
             .Argumentative => |*val| {
-                if (arg.len > 1024) return FlagErrs.OutOfMemory;
-                @memcpy(val[0..arg.len], arg);
+                val.* = arg;
             }
         }
     }
@@ -217,12 +216,12 @@ pub const Flag = struct {
             },
 
             .Argumentative => |val| {
-                const default_val: []const u8 =  switch (default.value) {
-                    .Argumentative => |v| &v,
-                    else => unreachable,
-                };
-
-                return std.mem.eql(u8, &val, default_val);
+                // If it's not null, it's not default value
+                if (val) |_| { 
+                    return false; 
+                } else {
+                    return true;
+                }
             },
         }
     }

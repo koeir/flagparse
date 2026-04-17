@@ -67,7 +67,10 @@ pub fn main(init: std.process.Init) !void {
     }
 
     try stdout.writeAll("\n");
-    try stdout.print("The path is {s}!\n", .{ try flags.get_value("file", flagparse.Type.Argumentative) });
+    const file = try flags.get_value("file", flagparse.Type.Argumentative);
+    if (file) |val| {
+        try stdout.print("The path is {s}!\n", .{ val });
+    }
     try stdout.print("Recursion is {any}\n", .{ try flags.get_value("recursive", flagparse.Type.Switch) });
 
     // Also works with the Flags struct
@@ -110,17 +113,11 @@ const initflags: flagparse.Type.Flags = .{
         // Arguments will accept the next argv
         // e.g. -prf noob
         // "noob" will be accepted as the file
-        //
-        // They will however, NOT accept any arg that starts with "-"
-        // e.g. -p -r noob
-        // will yield an error
         .{
             .name = "file",
             .long = "path",
             .short = 'p',
-            // Argumentative flags should not be initialized as undefined,
-            // instead, make a reference to array of 1024 u8s
-            .value = .{ .Argumentative = .{0} ** 1024 },
+            .value = .{ .Argumentative = null },
             .desc = "Path to file",
         },
 
@@ -134,7 +131,7 @@ const initflags: flagparse.Type.Flags = .{
             .name = "hello",
             .long = "hello",
             .desc = "hi",
-            .value = .{  .Argumentative = .{0} ** 1024 }
+            .value = .{  .Argumentative = null }
         },
     },
 
