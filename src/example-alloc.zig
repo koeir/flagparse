@@ -54,9 +54,7 @@ pub fn main(init: std.process.Init) !void {
     defer flags.deinit(&gpa.allocator());
 
     const flagless_args = result.argv;
-    if (flagless_args) |args| {
-        defer gpa.allocator().free(args);
-    }
+    defer if (flagless_args) |args| gpa.allocator().free(args);
 
     try stdout.writeAll("Toggled flags:\n");
     // Formatted print for each flagparse

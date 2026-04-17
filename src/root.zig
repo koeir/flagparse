@@ -12,9 +12,8 @@ pub fn parse(
 ) !struct { flags: Type.Flags, argv: ?[][:0]const u8 } {
     if (cfg.verbose == true and cfg.writer == null) {
         return error.NoWriter;
-    } else {
-        defer cfg.writer.?.flush() catch {};
     }
+    defer if (cfg.writer) |w| w.flush() catch {};
 
     var iter = args.iterate();
     var args_iter: Type.ArgIterator = .{
@@ -31,7 +30,11 @@ pub fn parse(
     var out_args = Type.OutArgs{};
 
     // put current arg in iteration in errptr on error
-    errdefer errptr.* = args_iter.args.vector[args_iter.index-1];
+    errdefer errptr.* = blk: {
+        if (args_iter.index > 0) {
+            break :blk args.vector[args_iter.index-1];
+        } else break :blk args.vector[0];
+    };
 
     if (!args_iter.skip()) return error.NoArgs;
     while (args_iter.next()) |arg| {
