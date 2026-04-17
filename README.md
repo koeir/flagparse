@@ -12,8 +12,8 @@ A simple flag parser for Zig programs.
 
 - **allowDups**: Don't error when duplicate flags are set. _Default is false_.
 - **verbose**: Print out error messages when errors occur. _Default is false_.
-- **prefix**: Print out a custom string for verbose messages. _Default is null_.
 - **writer**: Required when using verbose option. Doesn't really do anything without it. _Default is null_.
+- **prefix**: Print out a custom string for verbose messages. _Default is null_.
 - **allowDashAsFirstCharInArgForArg**: I admit this needs a better name. It allows argumentative type flags (meaning flags that hold a string/arg) to hold strings that begin with "-". _Default is true_.
 
 ## Usage
@@ -52,8 +52,8 @@ const initflags: flagparse.Type.Flags = .{
     {
         .{
             .name = "recursive",
-            .long = "recursive",
-            .short = 'r',
+            .long = "recursive",      // long flags and short flags are maybe values; 
+            .short = 'r',             // if both are missing then they can't... be set
             .value = .{ .Switch = false },
             .desc = "Recurse into directories",
         },
