@@ -13,15 +13,17 @@ pub fn main(init: std.process.Init) !void {
     const stdout = &stdout_writer.interface;
     defer stdout.flush() catch {};
 
-    var fba_buf: [10000]u8 = undefined;
-    var fba: std.heap.FixedBufferAllocator = .init(&fba_buf);
-    
+    var gpa = std.heap.DebugAllocator(.{}){};
+    defer {
+        if (gpa.deinit() == std.heap.Check.leak) @panic("MEMORYLEAK");
+    }
+
     // points to last arg on error
     // not necessarily the arg that caused the error
     var errptr: [*:0]const u8 = undefined;
 
     // actual parse, returns a tuple of Flags and resulting args
-    const result = flagparse.parse(&fba.allocator(), &min.args, initflags, &errptr,
+    const result = flagparse.parse(&gpa.allocator(), &min.args, initflags, &errptr,
     .{ .allowDups = false, .verbose = true, .writer = stderr, .prefix = "my-program: " }) catch |err| {
         if (err != flagparse.Type.FlagErrs.ArgNoArg) return;
 
@@ -47,8 +49,13 @@ pub fn main(init: std.process.Init) !void {
         return;
     };
 
-    const flags = result.flags;
+    const flags: flagparse.Type.Flags = result.flags;
+    defer gpa.allocator().free(flags.list);
+
     const flagless_args = result.argv;
+    if (flagless_args) |args| {
+        defer gpa.allocator().free(args);
+    }
 
     try stdout.writeAll("Toggled flags:\n");
     // Formatted print for each flagparse
@@ -84,10 +91,10 @@ pub fn main(init: std.process.Init) !void {
 }
 
 // Initialize flags and their default values
-// name doesn't really matter as long as the 
+// name doesn't really matter as long as the
 // members are all of type flagparse
 const initflags: flagparse.Type.Flags = .{
-    .list = &[_] flagparse.Type.Flag 
+    .list = &[_] flagparse.Type.Flag
     {
         .{
             .name = "recursive",
@@ -135,5 +142,5 @@ const initflags: flagparse.Type.Flags = .{
             .value = .{  .Argumentative = .{0} ** 1024 }
         },
     },
-    
+
 };
