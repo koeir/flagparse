@@ -21,7 +21,7 @@ A simple flag parser for Zig programs.
 1. Fetch with zig and add as module in build.zig
 
 ```zsh
-zig fetch --save https://github.com/koeir/flagparse/releases/tag/v0.2.1
+zig fetch --save https://github.com/koeir/flagparse/releases/tag/v0.5.2
 ```
 
 ```zig
