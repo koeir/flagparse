@@ -187,7 +187,11 @@ pub const Flag = struct {
     value:  FlagVal,
     desc:   ?[]const u8 = null,
 
-    pub var padding: u64 = 30;
+    pub const Padding = struct {
+        left: usize = 1,
+        center: usize = 30,
+
+    };
 
     // Toggles value of Switch type flag
     pub fn toggle(self: *Flag) !void {
@@ -231,27 +235,31 @@ pub const Flag = struct {
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
         // Don't change the actual padding var
-        var tmp_padding = padding;
+        var tmp_padding: Padding = .{};
+
+        while (tmp_padding.left > 0) : (tmp_padding.left -= 1) {
+            try writer.writeAll(" ");
+        }
 
         if (self.short) |short| {
             try writer.print("-{c}", .{ short });
-            tmp_padding -= 2;
+            tmp_padding.center -= 2;
 
             switch (self.value) {
                 .Argumentative => {
                     try writer.print(" <{s}>", .{ self.name });
-                    tmp_padding -= @as(u64, self.name.len) + 3;
+                    tmp_padding.center -= self.name.len + 3;
                 },
                 else => {},
             }
 
             if (self.long) |_| {
                 try writer.writeAll(", ");
-                tmp_padding -= 2;
+                tmp_padding.center -= 2;
             }
         } else {
             try writer.writeAll("    ");
-            tmp_padding -= 4;
+            tmp_padding.center -= 4;
         }
 
         if (self.long) |long| {
@@ -259,14 +267,14 @@ pub const Flag = struct {
             switch (self.value) {
                 .Argumentative => {
                     try writer.print(" <{s}>", .{ self.name });
-                    tmp_padding -= @as(u64, self.name.len) + 3;
+                    tmp_padding.center -= self.name.len + 3;
                 },
                 else => {},
             }
-            tmp_padding -= @as(u64, long.len + 2);
+            tmp_padding.center -= long.len + 2;
         }
 
-        while (tmp_padding > 0) : (tmp_padding-= 1) {
+        while (tmp_padding.center > 0) : (tmp_padding.center-= 1) {
             try writer.writeAll(" ");
         }
 
