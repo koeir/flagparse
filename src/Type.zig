@@ -8,8 +8,8 @@ pub const OutArgs = struct {
     index: usize = 0,
 
     pub fn add_arg(
-        self: *@This(), 
-        a: *const std.mem.Allocator, 
+        self: *@This(),
+        a: *const std.mem.Allocator,
         arg: [:0]const u8,
         og_arglist: *const std.process.Args,
     ) !void {
@@ -65,7 +65,7 @@ pub const FlagType = enum {
 pub const FlagVal = union(FlagType) {
     Switch: bool,                 // On/off
     Argumentative: ?[:0]const u8, // Takes an argument
-    
+
     pub fn format(
         self: @This(),
         writer: *std.Io.Writer,
@@ -87,7 +87,7 @@ pub const ArgIterator = struct {
 
     pub fn current(self: *@This()) ?[:0]const u8 {
         if (self.index > self.count) return null;
-        
+
         if (self.index == 0) return std.mem.span(self.args.vector[self.index]);
 
         return std.mem.span(self.args.vector[self.index-1]);
@@ -118,7 +118,7 @@ pub const Flags = struct {
     const Self = @This();
 
     list: []const Flag,
-    
+
     // returns null if not found
     pub fn get(self: *const Self, name: []const u8) ?*const Flag {
         return for (self.list) |flag| {
@@ -156,7 +156,7 @@ pub const Flags = struct {
                 return val;
             },
             .Argumentative => |val| {
-                if (@TypeOf(val) != T) { 
+                if (@TypeOf(val) != T) {
                     return FlagErrs.FlagNotSwitch;
                 }
                 return val;
@@ -168,11 +168,17 @@ pub const Flags = struct {
         allocator.free(self.list);
     }
 
+    pub const UsageConfig = struct {
+        padding_left: usize = 0,
+    };
+
     // can only be called by init flags
     pub fn usage(
         comptime self: @This(),
         writer: *std.Io.Writer,
+        cfg: UsageConfig,
     ) std.Io.Writer.Error!void {
+
         // get n of flags
         const n_tags: usize = comptime blk: {
             var n_tags: usize = 0;
@@ -193,6 +199,10 @@ pub const Flags = struct {
                 if (std.mem.eql(u8, did, tag)) break true;
             } else false;
             if (already_done) continue;
+
+            for (0..cfg.padding_left) |_| {
+                try writer.writeAll(" ");
+            }
 
             // print all flags of the tag
             try writer.print("{s}:\n", .{ tag });
@@ -223,11 +233,15 @@ pub const Flag = struct {
     value:  FlagVal,
     desc:   ?[]const u8 = null,
 
+    // center padding is calculated by
+    // value - n of chars in "-<s>, --<long>"
     pub const Padding = struct {
         left: usize = 1,
         center: usize = 30,
 
     };
+
+    pub var padding = Padding{};
 
     // Toggles value of Switch type flag
     pub fn toggle(self: *Flag) !void {
@@ -257,8 +271,8 @@ pub const Flag = struct {
 
             .Argumentative => |val| {
                 // If it's not null, it's not default value
-                if (val) |_| { 
-                    return false; 
+                if (val) |_| {
+                    return false;
                 } else {
                     return true;
                 }
@@ -271,7 +285,7 @@ pub const Flag = struct {
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
         // Don't change the actual padding var
-        var tmp_padding: Padding = .{};
+        var tmp_padding = padding;
 
         while (tmp_padding.left > 0) : (tmp_padding.left -= 1) {
             try writer.writeAll(" ");

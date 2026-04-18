@@ -52,6 +52,17 @@ pub fn main(init: std.process.Init) !void {
     const flags: flagparse.Type.Flags = result.flags;
     const flagless_args = result.argv;
 
+    // change padding
+    // warning:
+    // center padding is calculated by
+    // value - n of chars in "-<s>, --<long>"
+    //
+    // so make sure the padding is enough
+    flagparse.Type.Flag.padding = .{
+        .left = 5,
+        .center = 30,
+    };
+
     try stdout.writeAll("Toggled flags:\n");
     // Formatted print for each flagparse
     for (flags.list) |f| {
@@ -75,7 +86,7 @@ pub fn main(init: std.process.Init) !void {
 
     // Also works with the Flags struct
     try stdout.writeAll("\n");
-    try initflags.usage(stdout);
+    try initflags.usage(stdout, .{ .padding_left = 2 });
 
     try stdout.writeAll("Flagless argv list:\n");
 
