@@ -132,5 +132,12 @@ const initflags: flagparse.Type.Flags = .{
             .value = .{ .Argumentative = null },
             .desc = "Path to file",
         },
+        .{
+            .name = "this",
+            .long = "foo",
+            .short = 'g',
+            .value = .{ .Argumentative = null },
+            .desc = "Path to file",
+        }
     }
 };

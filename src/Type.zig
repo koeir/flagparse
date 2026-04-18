@@ -170,6 +170,7 @@ pub const Flags = struct {
 
     pub const UsageConfig = struct {
         padding_left: usize = 0,
+        untaggedFirst: bool = true,
     };
 
     // can only be called by init flags
@@ -186,6 +187,9 @@ pub const Flags = struct {
                 if (flag.tag) |_| n_tags += 1;
             } break :blk n_tags;
         };
+
+        // print tagless flags
+        if (cfg.untaggedFirst) try self.printUntagged(writer); 
 
         // keep track of flags that are already printed
         var done: [n_tags][]const u8 = undefined;
@@ -215,11 +219,14 @@ pub const Flags = struct {
             n_done += 1;
         }
 
-        // print tagless flags
+        if (!cfg.untaggedFirst) try self.printUntagged(writer);
+    }
+
+    fn printUntagged(self: @This(), writer: *std.Io.Writer) !void {
         for (self.list) |flag| {
             if (flag.tag) |_| continue;
             try writer.print("{f}\n", .{ flag });
-        }
+        } try writer.writeAll("\n");
     }
 };
 
