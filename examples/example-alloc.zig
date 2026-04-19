@@ -104,7 +104,7 @@ const initflags: flagparse.Type.Flags = .{
     {
         .{
             .name = "recursive",
-            .tag = "This",
+            .tag = "Switches",
             .long = "recursive",
             .short = 'r',
             .value = .{ .Switch = false },
@@ -113,7 +113,7 @@ const initflags: flagparse.Type.Flags = .{
 
         .{
             .name = "force",
-            .tag = "This",
+            .tag = "Switches",
             .long = "force",
             .short = 'f',
             .value = .{ .Switch = false },
@@ -125,18 +125,11 @@ const initflags: flagparse.Type.Flags = .{
         // "noob" will be accepted as the file
         .{
             .name = "file",
-            .tag = "That",
+            .tag = "Input",
             .long = "path",
             .short = 'p',
             .value = .{ .Argumentative = null },
             .desc = "Path to file",
         },
-        .{
-            .name = "this",
-            .long = "foo",
-            .short = 'g',
-            .value = .{ .Argumentative = null },
-            .desc = "Path to file",
-        }
     }
 };
