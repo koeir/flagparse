@@ -5,7 +5,7 @@ pub const Type = @import("Type.zig");
 // Memory returned must be freed
 pub fn parse(
     allocator: std.mem.Allocator,
-    args: *const std.process.Args,
+    args: std.process.Args,
     comptime init_flags: Type.Flags,
     errptr: *?[*:0]const u8,
     cfg: Type.ParseConfig,

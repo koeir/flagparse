@@ -10,7 +10,7 @@ pub const OutArgs = struct {
         self: *@This(),
         a: std.mem.Allocator,
         arg: [:0]const u8,
-        og_arglist: *const std.process.Args,
+        og_arglist: std.process.Args,
     ) !void {
         // Allocate memory if it doesn't exist yet
         if (self.args == null) {
@@ -67,7 +67,7 @@ pub const ParseResult = struct {
 
     pub fn init(
         allocator: std.mem.Allocator, 
-        args: *const std.process.Args,
+        args: std.process.Args,
         comptime init_flags: Flags, 
         errptr: *?[*:0]const u8, 
         cfg: ParseConfig
@@ -97,7 +97,7 @@ pub const FlagVal = union(FlagType) {
 };
 
 pub const ArgIterator = struct {
-    args: *const std.process.Args,
+    args: std.process.Args,
     // vvv Should not be used for iterating as it does not update index
     iter: *std.process.Args.Iterator,
     // ^^^
