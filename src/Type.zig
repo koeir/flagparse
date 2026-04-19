@@ -361,5 +361,6 @@ pub const ParseConfig = struct {
     writer: ?*std.Io.Writer = null,
     // very specific
     allowDashAsFirstCharInArgForArg: bool = true,
+    errOnNoArgs: bool = false,
     prefix: ?[]const u8 = null,
 };
