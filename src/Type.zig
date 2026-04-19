@@ -164,23 +164,20 @@ pub const Flags = struct {
         } else null;
     }
 
-    pub fn get_value(self: *const Self, comptime name: []const u8, comptime T: type) FlagErrs!T {
-        const flag = try try_get(self, name);
+    // returns null if cannot find flag
+    pub fn value(self: *const Self, name: []const u8, comptime T: type) ?T {
+        const flag = get(self, name) orelse return null;
 
-        return switch (flag.value) {
+        switch (flag.value) {
             .Switch => |val| {
-                if (@TypeOf(val) != T) {
-                    return FlagErrs.FlagNotArg;
-                }
+                if (@TypeOf(val) != T) return null;
                 return val;
             },
             .Argumentative => |val| {
-                if (@TypeOf(val) != T) {
-                    return FlagErrs.FlagNotSwitch;
-                }
+                if (@TypeOf(val) != T) return null;
                 return val;
             }
-        };
+        }
     }
 
     pub fn deinit(self: *const Self, allocator: std.mem.Allocator) void {
