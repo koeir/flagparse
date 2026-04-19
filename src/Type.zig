@@ -8,7 +8,7 @@ pub const OutArgs = struct {
 
     pub fn add_arg(
         self: *@This(),
-        a: *const std.mem.Allocator,
+        a: std.mem.Allocator,
         arg: [:0]const u8,
         og_arglist: *const std.process.Args,
     ) !void {
@@ -23,7 +23,7 @@ pub const OutArgs = struct {
 
     pub fn resize(
         self: *@This(),
-        a: *const std.mem.Allocator
+        a: std.mem.Allocator
     ) !void {
         if (self.args) |*value| {
             value.* = try a.realloc(value.*, self.count());
@@ -66,7 +66,7 @@ pub const ParseResult = struct {
     argv: ?[][:0]const u8,
 
     pub fn init(
-        allocator: *const std.mem.Allocator, 
+        allocator: std.mem.Allocator, 
         args: *const std.process.Args,
         comptime init_flags: Flags, 
         errptr: *?[*:0]const u8, 
@@ -183,7 +183,7 @@ pub const Flags = struct {
         };
     }
 
-    pub fn deinit(self: *const Self, allocator: *const std.mem.Allocator) void {
+    pub fn deinit(self: *const Self, allocator: std.mem.Allocator) void {
         allocator.free(self.list);
     }
 
