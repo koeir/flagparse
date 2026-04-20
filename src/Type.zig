@@ -47,6 +47,7 @@ pub const FlagErrs = error {
     ArgTooLong,
     OutOfMemory,
     NoWriter,
+    TypeMismatch,       // failure to retrieve value, type given does not match value
 };
 
 pub const FlagFmt = enum {
@@ -164,23 +165,23 @@ pub const Flags = struct {
         } else null;
     }
 
-    pub fn get_value(self: *const Self, comptime name: []const u8, comptime T: type) FlagErrs!T {
+    pub fn get_value(self: *const Self, name: []const u8, comptime T: type) FlagErrs!T {
         const flag = try try_get(self, name);
 
-        return switch (flag.value) {
+        // looks ugly but is stupidly necessary to be hardwritten
+        // repetitively as of Zig 0.16.0 i think
+        switch (flag.value) {
             .Switch => |val| {
                 if (@TypeOf(val) != T) {
-                    return FlagErrs.FlagNotArg;
-                }
-                return val;
+                    return FlagErrs.TypeMismatch;
+                } return val;
             },
             .Argumentative => |val| {
                 if (@TypeOf(val) != T) {
-                    return FlagErrs.FlagNotSwitch;
-                }
-                return val;
+                    return FlagErrs.TypeMismatch;
+                } return val;
             }
-        };
+        }
     }
 
     pub fn deinit(self: *const Self, allocator: std.mem.Allocator) void {

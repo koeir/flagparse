@@ -77,11 +77,11 @@ pub fn main(init: std.process.Init) !void {
     }
 
     try stdout.writeAll("\n");
-    const file: ?[:0]const u8 = flags.value("file", flagparse.Type.Argumentative).?;
+    const file: ?[:0]const u8 = try flags.get_value("file", flagparse.Type.Argumentative);
     if (file) |val| {
         try stdout.print("The path is {s}!\n", .{ val });
     }
-    try stdout.print("Recursion is {any}\n", .{ flags.value("recursive", flagparse.Type.Switch).? });
+    try stdout.print("Recursion is {any}\n", .{ try flags.get_value("recursive", flagparse.Type.Switch) });
 
     // Also works with the Flags struct
     try stdout.writeAll("\n");
