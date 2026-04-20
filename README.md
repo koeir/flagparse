@@ -179,5 +179,6 @@ pub const FlagErrs = error {
     ArgNoArg,           // no argument given to argumentative flag
     OutOfMemory,        // something's size exceeds its buffers len
     NoWriter,           // no writer given when verbose is true
+    TypeMismatch,       // a more general FlagNotSwitch/FlagNotArg
 }
 ```
