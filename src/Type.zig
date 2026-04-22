@@ -67,10 +67,10 @@ pub const ParseResult = struct {
     argv: ?[][:0]const u8,
 
     pub fn init(
-        allocator: std.mem.Allocator, 
+        allocator: std.mem.Allocator,
         args: std.process.Args,
-        comptime init_flags: Flags, 
-        errptr: *?[*:0]const u8, 
+        comptime init_flags: Flags,
+        errptr: *?[*:0]const u8,
         cfg: ParseConfig
     ) !ParseResult {
         return try root.parse(allocator, args, init_flags, errptr, cfg);
@@ -209,7 +209,7 @@ pub const Flags = struct {
         };
 
         // print tagless flags
-        if (cfg.untaggedFirst) try self.printUntagged(writer); 
+        if (cfg.untaggedFirst) try self.printUntagged(writer);
 
         // keep track of flags that are already printed
         var done: [n_tags][]const u8 = undefined;
@@ -243,10 +243,14 @@ pub const Flags = struct {
     }
 
     fn printUntagged(self: @This(), writer: *std.Io.Writer) !void {
+        var hasUntagged = false;
         for (self.list) |flag| {
             if (flag.tag) |_| continue;
             try writer.print("{f}\n", .{ flag });
-        } try writer.writeAll("\n");
+            hasUntagged = true;
+        }
+
+        if (hasUntagged) try writer.writeAll("\n");
     }
 };
 
