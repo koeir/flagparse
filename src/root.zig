@@ -48,10 +48,19 @@ pub fn parse(
         };
 
         switch (fmt) {
-            .Long   => try helpers.parse_flag(arg[2..], fmt, out_flags, defaults, &args_iter, cfg),
+            .Long   => {
+                try helpers.parse_flag(
+                    arg[2..], fmt, 
+                    out_flags, defaults, 
+                    &args_iter, cfg);
+                },
             .Short  => {
                 for (arg[1..]) |c| {
-                    try helpers.parse_flag(&[_]u8 {c}, fmt, out_flags, defaults, &args_iter, cfg);
+                    try helpers.parse_flag(
+                        &[_]u8 {c}, fmt, 
+                        out_flags, defaults, 
+                        &args_iter, cfg
+                    );
                 }
             },
         }
@@ -77,4 +86,17 @@ pub fn flagfmt(arg: []const u8) ?Type.FlagFmt {
 
     if (arg[1] == '-') return Type.FlagFmt.Long;
     return Type.FlagFmt.Short;
+}
+
+// returns error messages for flag errors
+// does not include errors that should not
+// appear in production
+pub fn error_message(err: Type.FlagErrs) ?[]const u8 {
+    switch (err) {
+        .NoArgs =>      return "Missing arguments",
+        .NoSuchFlag     => return "No such flag",
+        .DuplicateFlag  => return "Duplicate flag",
+        .ArgNoArg       => return "No argument supplied",
+        else            => return null,
+    }
 }
