@@ -22,9 +22,9 @@ pub fn build(b: *std.Build) void {
     if (want_example) {
 
     const exe = b.addExecutable(.{
-        .name = "example-alloc",
+        .name = "example",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("examples/example-alloc.zig"),
+            .root_source_file = b.path("examples/example.zig"),
             .target = target,
             .optimize = optimize,
         })
