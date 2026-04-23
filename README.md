@@ -16,6 +16,7 @@ A simple flag parser for Zig programs.
 - **prefix**: Print out a custom string for verbose messages. _Default is null_.
 - **allowDashAsFirstCharInArgForArg**: I admit this needs a better name. It allows argumentative type flags (meaning flags that hold a string/arg) to hold strings that begin with "-". _Default is true_.
 - **errOnNoArgs**: Outputs an error if there are no arguments except argv[0]. _Default is false_
+- **exitFirstErr**: Exit on first error found. _Default is true_.
 
 ## Usage
 
@@ -54,7 +55,7 @@ const initflags: flagparse.Type.Flags = .{
         .{
             .name = "recursive",
             .tag = "Switches",
-            .long = "recursive",      // long flags and short flags are maybe values; 
+            .long = "recursive",      // long flags and short flags are maybe values;
             .short = 'r',             // if both are missing then they can't... be set
             .value = .{ .Switch = false },
             .desc = "Recurse into directories",
@@ -98,9 +99,8 @@ pub fn main(init: std.process.Init) !void {
     var arena: std.heap.ArenaAllocator = .init(gpa.allocator());
     defer arena.deinit();
 
-    // points to last arg on error
-    // not necessarily the arg that caused the error
-    var errptr: ?[*:0]const u8 = null;
+    // points to last flag on error
+    var errptr: ?[]const u8 = null;
     ...
 
 ```
@@ -144,7 +144,9 @@ pub fn main() !void {
 ```
 
 ## Printing Format
+
 The Flags struct has a method `usage()` that prints all flags with their respective tags. Tags that appear first in the array of the init flags are printed first. Whether the flags without tags are printed first or last can be change with the config option `untaggedFirst: bool`.
+
 ```zsh
   Switches:
      -r, --recursive               Recurse into directories
@@ -155,6 +157,7 @@ The Flags struct has a method `usage()` that prints all flags with their respect
 ```
 
 Individual flags`: Type.Flag` can also be printed with their `format()` method via `{f}` print format. The left-padding and the padding between the flags and their descriptions can be changed with the `.padding` variable in the `Type.Flag` struct.
+
 ```zig
 // e.g.
 // This affects the printing of `Type.Flags.usage()` too
@@ -163,6 +166,7 @@ flagparse.Type.Flag.padding = {
     .center = 20,
 }
 ```
+
 ```zsh
  -r, --recursive     Recurse into directories
 ```
