@@ -108,7 +108,7 @@ const initflags: flagparse.Type.Flags = .{
             .desc = "Do not skip confirmation prompts",
         },
         .{
-            .name = "noForce",
+            .name = "force-vanity",
             .tag = "Switches",
             .long = "[no-]force",
             .isVanity = true,
