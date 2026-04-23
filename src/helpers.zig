@@ -47,7 +47,7 @@ pub fn get_long_flag(
     arg: []const u8,
 ) FlagError!*Flag {
     for (flags) |*flag| {
-        if (std.mem.eql(u8, flag.long orelse continue, arg)) return flag;
+        if (std.mem.eql(u8, flag.long orelse continue, arg) and !flag.isVanity) return flag;
     } return FlagError.NoSuchFlag;
 }
 
@@ -56,6 +56,6 @@ pub fn get_short_flag(
     arg: u8,
 ) FlagError!*root.Type.Flag {
     for (flags) |*flag| {
-        if (arg == flag.short orelse continue) return flag;
+        if (arg == flag.short orelse continue and !flag.isVanity) return flag;
     } return FlagError.NoSuchFlag;
 }

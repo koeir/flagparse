@@ -238,7 +238,7 @@ pub const Flags = struct {
             n_done += 1;
         }
 
-        if (!cfg.untaggedFirst) try self.printUntagged(writer);
+        if (!cfg.untaggedFirst and cfg.printUntagged) try self.printUntagged(writer);
     }
 
     fn printUntagged(self: @This(), writer: *std.Io.Writer) !void {
@@ -261,6 +261,7 @@ pub const Flag = struct {
     long:   ?[]const u8 = null,
     short:  ?u8 = null,
     value:  FlagVal,
+    isVanity: bool = false, // only for show in prints
     desc:   ?[]const u8 = null,
     default: *const Flag = undefined,
 

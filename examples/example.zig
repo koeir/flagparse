@@ -95,16 +95,26 @@ const initflags: flagparse.Type.Flags = .{
             .value = .{ .Switch = false },
             .desc = "Recurse into directories",
         },
-
         .{
             .name = "force",
-            .tag = "Switches",
             .long = "force",
-            .short = 'f',
             .value = .{ .Switch = false },
             .desc = "Skip confirmation prompts",
         },
-
+        .{
+            .name = "noForce",
+            .long = "no-force",
+            .value = .{ .Switch = false },
+            .desc = "Do not skip confirmation prompts",
+        },
+        .{
+            .name = "noForce",
+            .tag = "Switches",
+            .long = "[no-]force",
+            .isVanity = true,
+            .value = .{ .Switch = false }, //value doesn't matter because it's vanity
+            .desc = "[Don't skip/skip] confirmation prompts",
+        },
         // Arguments will accept the next argv
         // e.g. -prf noob
         // "noob" will be accepted as the file
