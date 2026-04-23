@@ -9,7 +9,6 @@ pub fn parse_flag(
     arg: []const u8, 
     fmt : root.Type.FlagFmt,
     flags: []Flag,
-    comptime defaults: Flags,
     args: *root.Type.ArgIterator,
     cfg: root.Type.ParseConfig
 ) FlagErrs!void {
@@ -18,7 +17,7 @@ pub fn parse_flag(
         .Short => break :blk try get_short_flag(flags, arg[0]),
     };
 
-    const isDefault = try flag.isDefault(defaults);
+    const isDefault = flag.isDefault();
     if (!isDefault and !cfg.allowDups)
         return root.Type.FlagErrs.DuplicateFlag;
 

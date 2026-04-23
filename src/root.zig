@@ -23,7 +23,10 @@ pub fn parse(
     // Initialize the parsed flags
     var out_flags = try allocator.alloc(Type.Flag, defaults.list.len);
     errdefer allocator.free(out_flags);
-    for (defaults.list, 0..) |value, i| out_flags[i] = value;
+    for (defaults.list, 0..) |*value, i| {
+        out_flags[i] = value.*;
+        out_flags[i].default = value;
+    }
 
     // Use buffer
     var out_args = Type.OutArgs{};
@@ -48,8 +51,9 @@ pub fn parse(
             .Long   => {
                 helpers.parse_flag(
                     arg[2..], fmt, 
-                    out_flags, defaults, 
-                    &args_iter, cfg) catch |err| {
+                    out_flags, &args_iter, 
+                    cfg
+                ) catch |err| {
                     isErred = true;
 
                     if (cfg.verbose) {
@@ -67,8 +71,8 @@ pub fn parse(
                 for (arg[1..], 1..) |c, i| {
                     helpers.parse_flag(
                         &[_]u8 {c}, fmt, 
-                        out_flags, defaults, 
-                        &args_iter, cfg
+                        out_flags, &args_iter, 
+                        cfg
                     ) catch |err| {
                         isErred = true;
                         if (cfg.verbose){

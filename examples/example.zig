@@ -52,13 +52,13 @@ pub fn main(init: std.process.Init) !void {
     try stdout.writeAll("Toggled flags:\n");
     // Formatted print for each flagparse
     for (flags.list) |f| {
-        if (!try f.isDefault(initflags)) try stdout.print("{f}\n", .{ f } );
+        if (!f.isDefault()) try stdout.print("{f}\n", .{ f } );
     }
 
     try stdout.writeAll("\n");
     try stdout.writeAll("Values:\n");
     for (flags.list) |f| {
-        if (try f.isDefault(initflags)) continue;
+        if (f.isDefault()) continue;
 
         try stdout.print("{s}: {f}\n", .{ f.name, f.value });
     }

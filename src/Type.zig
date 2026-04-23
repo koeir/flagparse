@@ -261,6 +261,7 @@ pub const Flag = struct {
     short:  ?u8 = null,
     value:  FlagVal,
     desc:   ?[]const u8 = null,
+    default: *const Flag = undefined,
 
     // center padding is calculated by
     // value - n of chars in "-<s>, --<long>"
@@ -290,20 +291,30 @@ pub const Flag = struct {
     }
 
     // Pass on the init Flags struct
-    pub fn isDefault(self: *const Self, comptime defaults: Flags) !bool {
-        const default = try defaults.try_get(self.name);
-
+    pub fn isDefault(self: *const Self) bool {
         switch (self.value) {
             .Switch => |val| {
-                return (val == default.value.Switch);
+                switch (self.default.value) {
+                    .Switch => |default| {
+                        return val == default;
+                    },
+                    else    => unreachable,
+                }
             },
-
             .Argumentative => |val| {
-                // If it's not null, it's not default value
-                if (val) |_| {
-                    return false;
-                } else {
-                    return true;
+                switch (self.default.value) {
+                    .Argumentative => |default| {
+                        if (val) |v| {
+                            if (default) |d| {
+                                return std.mem.eql(u8, v, d);
+                            } else return false;
+                        } else {
+                            if (default == null) {
+                                return true;
+                            } else return false;
+                        }
+                    },
+                    else    => unreachable,
                 }
             },
         }
