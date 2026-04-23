@@ -25,7 +25,7 @@ A simple flag parser for Zig programs.
 Config for `Type.Flags.usage()` method
 
 - **padding_left**: Number of whitespaces before the tag. _Default is 0_
-- **printUntagged**: Print untagged flags. \_Default is false_.
+- **printUntagged**: Print untagged flags. _Default is false_.
 - **untaggedFirst**: Print untagged flags first. Prints last when false. _Default is true_.
 
 ## Usage
