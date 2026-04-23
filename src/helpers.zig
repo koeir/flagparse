@@ -27,7 +27,7 @@ pub fn parse_flag(
                 return root.Type.FlagError.ArgNoArg;
             };
 
-            if (next_arg[0] == '-' or
+            if (next_arg[0] == '-' and
                 !cfg.allowDashAsFirstCharInArgForArg) {
                 return root.Type.FlagError.ArgNoArg;
             }
