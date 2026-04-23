@@ -188,6 +188,7 @@ pub const Flags = struct {
 
     pub const UsageConfig = struct {
         padding_left: usize = 0,
+        printUntagged: bool = false,
         untaggedFirst: bool = true,
     };
 
@@ -207,7 +208,7 @@ pub const Flags = struct {
         };
 
         // print tagless flags
-        if (cfg.untaggedFirst) try self.printUntagged(writer);
+        if (cfg.untaggedFirst and cfg.printUntagged) try self.printUntagged(writer);
 
         // keep track of flags that are already printed
         var done: [n_tags][]const u8 = undefined;
