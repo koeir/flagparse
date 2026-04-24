@@ -44,10 +44,12 @@ pub fn main(init: std.process.Init) !void {
     // value - n of chars in "-<s>, --<long>"
     //
     // so make sure the padding is enough
-    flagparse.Type.Flag.padding = .{
-        .left = 5,
-        .center = 30,
-        .style = ' ', // default
+    flagparse.Type.Flag.fmt = .{
+        .padding = .{
+            .left = 5,
+            .center = 30,
+        },
+        .style = '.',
     };
 
     try stdout.writeAll("Toggled flags:\n");
@@ -57,29 +59,32 @@ pub fn main(init: std.process.Init) !void {
     }
 
     try stdout.writeAll("\n");
-    try stdout.writeAll("Values:\n");
-    for (flags.list) |f| {
-        if (f.isDefault()) continue;
-
-        try stdout.print("{s}: {f}\n", .{ f.name, f.value });
-    }
-
-    try stdout.writeAll("\n");
     const file: ?[:0]const u8 = try flags.get_value("file", flagparse.Type.Argumentative);
     if (file) |val| {
         try stdout.print("The path is {s}!\n", .{ val });
     } try stdout.writeAll("\n");
 
-    // Also works with the Flags struct
-    try initflags.usage(stdout, .{ .padding_left = 2 });
-
     try stdout.writeAll("Flagless argv list:\n");
-
     if (flagless_args) |args| {
         for (args) |value| {
             try stdout.print("{s}\n", .{ value });
         }
     }
+
+    // Also works with the Flags struct
+    try stdout.writeAll("\nUsage:\n");
+    try initflags.usage(stdout, .{ .padding_left = 2 });
+
+    // Different style
+    flagparse.Type.Flag.fmt = .{
+        .columns = .one,
+        .padding = .{
+            .left = 5,
+        },
+        .style = ' ',  // default
+    };
+    try stdout.writeAll("\nUsage:\n");
+    try initflags.usage(stdout, .{ .padding_left = 2 });
 }
 
 // Initialize flags and their default values

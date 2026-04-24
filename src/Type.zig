@@ -232,7 +232,7 @@ pub const Flags = struct {
             for (self.list) |f| {
                 if (!std.mem.eql(u8, f.tag orelse continue, tag)) continue;
                 try writer.print("{f}\n", .{ f });
-            } try writer.writeAll("\n");
+            } 
 
             done[n_done] = tag;
             n_done += 1;
@@ -267,13 +267,19 @@ pub const Flag = struct {
 
     // center padding is calculated by
     // value - n of chars in "-<s>, --<long>"
-    pub const Padding = struct {
-        left: usize = 1,
-        center: usize = 30,
+    pub const Format = struct {
         style: u8 = ' ',
+        columns: enum {
+            one, two
+        } = .two,
+        padding: struct {
+            left: usize = 1,
+            desc_left: usize = 1, // useless for columns.two; applied on top of .left
+            center: usize = 30, //useless for columns.one
+        } = .{},
     };
 
-    pub var padding = Padding{};
+    pub var fmt = Format{};
 
     // Toggles value of Switch type flag
     pub fn toggle(self: *Flag) !void {
@@ -326,32 +332,43 @@ pub const Flag = struct {
         self: @This(),
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
-        // Don't change the actual padding var
+        switch (fmt.columns) {
+            .one => try format_onecolumn(self, writer),
+            .two => try format_twocolumns(self, writer),
+        }
+    }
+
+    // returns number of chars printed
+    fn print_flags(
+        self: @This(),
+        padding_left: usize,
+        writer: *std.Io.Writer,
+    ) std.Io.Writer.Error!usize {
         var minus: usize = 0;
 
-        for (0..padding.left) |_| {
+        for (0..padding_left) |_| {
             try writer.writeAll(" ");
         }
 
         if (self.short) |short| {
             try writer.print("-{c}", .{ short });
-            minus += 2;
+            minus += "-.".len;
 
             switch (self.value) {
                 .Argumentative => {
                     try writer.print(" <{s}>", .{ self.name });
-                    minus += self.name.len + 3;
+                    minus += self.name.len + " <>".len;
                 },
                 else => {},
             }
 
             if (self.long) |_| {
                 try writer.writeAll(", ");
-                minus += 2;
+                minus += ", ".len;
             }
         } else {
             try writer.writeAll("    ");
-            minus += 4;
+            minus += "-., ".len;
         }
 
         if (self.long) |long| {
@@ -359,17 +376,43 @@ pub const Flag = struct {
             switch (self.value) {
                 .Argumentative => {
                     try writer.print(" <{s}>", .{ self.name });
-                    minus += self.name.len + 3;
+                    minus += self.name.len + " <>".len;
                 },
                 else => {},
             }
-            minus += long.len + 2;
+            minus += long.len + 2; // i honestly forgot what this is accounting for
         }
+
+        return minus;
+    }
+
+    fn format_onecolumn(
+        self: @This(),
+        writer: *std.Io.Writer,
+    ) !void {
+        const padding = fmt.padding;
+        _ = try self.print_flags(padding.left, writer);
+
+        try writer.writeAll("\n");
+        // i forgor why -1
+        for (0..padding.desc_left+padding.left-1) |_| {
+            try writer.writeAll(&[_]u8{fmt.style});
+        } try writer.writeAll(self.desc orelse return);
+        try writer.writeAll("\n");
+    }
+
+    fn format_twocolumns(
+        self: @This(),
+        writer: *std.Io.Writer,
+    ) std.Io.Writer.Error!void {
+        // Don't change the actual padding var
+        const padding = fmt.padding;
+        const minus = try self.print_flags(padding.left, writer);
 
         if (padding.center < minus) @panic("Need more center-padding!");
 
         for (0..padding.center-minus-1) |_| {
-            try writer.writeAll(&[_]u8 { padding.style });
+            try writer.writeAll(&[_]u8 { fmt.style });
         } try writer.writeAll(" ");
 
         if (self.desc == null) return;
