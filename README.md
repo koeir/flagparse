@@ -16,7 +16,7 @@ A simple flag parser for Zig programs.
 - **verbose**: Print out error messages when errors occur. _Default is false_.
 - **writer**: Required when using verbose option. Doesn't really do anything without it. _Default is null_.
 - **prefix**: Print out a custom string for verbose messages. _Default is null_.
-- **allowDashAsFirstCharInArgForArg**: I admit this needs a better name. It allows argumentative type flags (meaning flags that hold a string/arg) to hold strings that begin with "-". _Default is true_.
+- **allowDashInput**: Allow input type flags to hold strings that begin with "-". _Default is true_.
 - **errOnNoArgs**: Outputs an error if there are no arguments except argv[0]. _Default is false_.
 - **exitFirstErr**: Exit on first error found. _Default is true_.
 
