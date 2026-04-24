@@ -60,8 +60,8 @@ zig fetch --save https://github.com/koeir/flagparse/archive/refs/tags/v0.x.x.tar
 
 ```zig
 
-const Switch = flagparse.Type.Switch;
-const Argumentative = flagparse.Type.Argumentative;
+const Switch = flagparse.Type.Switch;                  // default is false
+const Argumentative = flagparse.Type.Argumentative;    // default is null
 
 const initflags: flagparse.Type.Flags = .{
     .list = &[_] flagparse.Type.Flag
