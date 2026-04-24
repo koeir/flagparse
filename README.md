@@ -4,7 +4,7 @@ A simple flag parser for Zig programs.
 
 ## Features
 
-- Formatted printing
+- Customizable formatted printing
 - Simple interface
 - Returns argv list without flags
 
@@ -88,7 +88,7 @@ const initflags: flagparse.Type.Flags = .{
             .long = "[no-]force",
             .isVanity = true,
             .value = .{ .Switch = false }, //value doesn't matter because it's vanity
-            .desc = "Don't skip/skip confirmation prompts",
+            .desc = "Don't/skip confirmation prompts",
         },
 
         // Arguments will accept the next argv
@@ -171,27 +171,55 @@ The Flags struct has a method `usage()` that prints all flags with their respect
 ```zsh
   Switches:
      -r, --recursive               Recurse into directories
-         --[no-]force              Don\'t skip/skip confirmation prompts
+         --[no-]force              Don\'t/skip confirmation prompts
 
   Input:
      -p <file>, --path <file>      Path to file
 ```
 
-Individual flags`: Type.Flag` can also be printed with their `format()` method via `{f}` print format. The left-padding and the padding between the flags and their descriptions can be changed with the `.padding` variable in the `Type.Flag` struct.
+Individual flags`: Type.Flag` can also be printed with their `format()` method via `{f}` print format. The left-padding and the padding between the flags and their descriptions can be changed with the `.fmt` variable in the `Type.Flag` struct.
 
 ```zig
 // e.g.
 // This affects the printing of `Type.Flags.usage()` too
-flagparse.Type.Flag.padding = {
-    .left = 1,
+flagparse.Type.Flag.fmt = {
+    .style = '.',       // change what is printed between the flags and descriptions; default is whitespace (' ')
+    .columns= .two,     // flags and descriptions as one/two columns; default is .two
+    .left = 1,        
     .center = 20,
-    .style = '.'    // change what is printed between the flags and descriptions
-                    // default is whitespace (' ')
 }
 ```
 
 ```zsh
  -r, --recursive.... Recurse into directories
+```
+
+More examples:
+```zig
+    // Different style
+    flagparse.Type.Flag.fmt = .{
+        .columns = .one,
+        .padding = .{
+            .left = 5,
+        },
+        .style = ' ',  // default
+    };
+    try stdout.writeAll("\nUsage:\n\n");
+    try initflags.usage(stdout, .{ .padding_left = 2, .tagStyle = .brackets });
+```
+```zsh
+Usage:
+
+  [Switches]
+     -r, --recursive
+     Recurse into directories
+
+         --[no-]force
+     Don\'t/skip confirmation prompts
+
+  [Input]
+     -p <file>, --path <file>
+     Path to file
 ```
 
 ## Errors
