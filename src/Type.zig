@@ -226,6 +226,7 @@ pub const Flags = struct {
             } else false;
             if (already_done) continue;
 
+            try writer.writeAll("\n");
             for (0..cfg.padding_left) |_| {
                 try writer.writeAll(" ");
             }
@@ -268,7 +269,7 @@ pub const Flag = struct {
     long:   ?[]const u8 = null,
     short:  ?u8 = null,
     value:  FlagVal,
-    isVanity: bool = false, // only for show in prints
+    vanity: ?[]const u8 = null, // only for show in prints, overrides long and short
     desc:   ?[]const u8 = null,
     default: *const Flag = undefined,
 
@@ -355,6 +356,11 @@ pub const Flag = struct {
 
         for (0..padding_left) |_| {
             try writer.writeAll(" ");
+        }
+
+        if (self.vanity) |v| {
+            try writer.writeAll(v);
+            return v.len;
         }
 
         if (self.short) |short| {

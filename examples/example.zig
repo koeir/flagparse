@@ -103,23 +103,19 @@ const initflags: flagparse.Type.Flags = .{
         },
         .{
             .name = "force",
+            .tag = "Switches",
             .long = "force",
+            .short = 'f',
+            .vanity = "-[n|f], --[no-]force",
             .value = .{ .Switch = false },
             .desc = "Skip confirmation prompts",
         },
-        .{
-            .name = "noForce",
+        .{  // by default, untagged flags will not be printed
+            .name = "no-force",
             .long = "no-force",
+            .short = 'n',
             .value = .{ .Switch = false },
             .desc = "Do not skip confirmation prompts",
-        },
-        .{
-            .name = "force-vanity",
-            .tag = "Switches",
-            .long = "[no-]force",
-            .isVanity = true,
-            .value = .{ .Switch = false }, //value doesn't matter because it's vanity
-            .desc = "Don't/skip confirmation prompts",
         },
         // Arguments will accept the next argv
         // e.g. -prf noob
