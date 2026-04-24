@@ -53,8 +53,8 @@ pub const FlagFmt = enum {
 };
 
 // Type aliases
-pub const Switch = bool;
-pub const Argumentative = ?[:0]const u8;
+pub const Switch: FlagVal = .{ .Switch = false };
+pub const Argumentative: FlagVal = .{ .Argumentative = null };
 
 pub const FlagType = enum {
     Switch, Argumentative
@@ -163,23 +163,9 @@ pub const Flags = struct {
         } else null;
     }
 
-    pub fn get_value(self: *const Self, name: []const u8, comptime T: type) FlagError!T {
-        const flag = try try_get(self, name);
-
-        // looks ugly but is stupidly necessary to be hardwritten
-        // repetitively as of Zig 0.16.0 i think
-        switch (flag.value) {
-            .Switch => |val| {
-                if (@TypeOf(val) != T) {
-                    return FlagError.TypeMismatch;
-                } return val;
-            },
-            .Argumentative => |val| {
-                if (@TypeOf(val) != T) {
-                    return FlagError.TypeMismatch;
-                } return val;
-            }
-        }
+    pub fn get_value(self: *const Self, name: []const u8) ?FlagVal {
+        const flag = self.get(name) orelse return null;
+        return flag.value;
     }
 
     pub fn deinit(self: *const Self, allocator: std.mem.Allocator) void {

@@ -59,7 +59,7 @@ pub fn main(init: std.process.Init) !void {
     }
 
     try stdout.writeAll("\n");
-    const file: ?[:0]const u8 = try flags.get_value("file", flagparse.Type.Argumentative);
+    const file: ?[:0]const u8 = flags.get_value("file").?.Argumentative;
     if (file) |val| {
         try stdout.print("The path is {s}!\n", .{ val });
     } try stdout.writeAll("\n");
