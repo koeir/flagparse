@@ -4,9 +4,9 @@ A simple flag parser for Zig programs.
 
 ## Features
 
-- Customizable formatted printing
-- Simple interface
-- Returns argv list without flags
+- [Customizable formatted printing](https://github.com/koeir/flagparse/blob/master/README.md#printing-format)
+- [Simple interface](https://github.com/koeir/flagparse/edit/master/README.md#usage)
+- [Returns argv list without flags](https://github.com/koeir/flagparse/edit/master/README.md#usage)
 
 ## Config Options
 
@@ -161,6 +161,41 @@ pub fn main() !void {
         // do stuff
     }
     ...
+```
+
+Other ways to retrieve flags:
+
+```zig
+    // returns null if not found
+    pub fn get(self: *const Self, name: []const u8) ?*const Flag {
+        return for (self.list) |flag| {
+            if (std.mem.eql(u8, flag.name, name)) break &flag;
+        } else null;
+    }
+
+    // errs if not found
+    pub fn try_get(self: *const Self, name: []const u8) FlagError!*const Flag {
+        return for (self.list) |flag| {
+            if (std.mem.eql(u8, flag.name, name)) break &flag;
+        } else FlagError.NoSuchFlag;
+    }
+
+    pub fn get_with_flag(self: *const Self, flag: []const u8) ?*const Flag {
+        return for (self.list) |*ret| {
+            if (ret.short) |short| {
+                if (flag[0] == short) break ret;
+            }
+
+            if (ret.long) |long| {
+                if (std.mem.eql(u8, flag, long)) break ret;
+            }
+        } else null;
+    }
+
+    pub fn get_value(self: *const Self, name: []const u8) ?FlagVal {
+        const flag = self.get(name) orelse return null;
+        return flag.value;
+    }
 ```
 
 ## Printing Format
