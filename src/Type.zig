@@ -239,7 +239,7 @@ pub const Flags = struct {
             for (self.list) |f| {
                 if (!std.mem.eql(u8, f.tag orelse continue, tag)) continue;
                 try writer.print("{f}\n", .{ f });
-            } 
+            }
 
             done[n_done] = tag;
             n_done += 1;
@@ -387,7 +387,7 @@ pub const Flag = struct {
                 },
                 else => {},
             }
-            minus += long.len + 2; // i honestly forgot what this is accounting for
+            minus += long.len + "--".len;
         }
 
         return minus;
@@ -400,12 +400,20 @@ pub const Flag = struct {
         const padding = fmt.padding;
         _ = try self.print_flags(padding.left, writer);
 
+        const padding_left = padding.left + padding.desc_left;
+
         try writer.writeAll("\n");
-        // i forgor why -1
-        for (0..padding.desc_left+padding.left-1) |_| {
+        for (0..padding_left-1) |_| {
             try writer.writeAll(&[_]u8{fmt.style});
-        } try writer.writeAll(self.desc orelse return);
-        try writer.writeAll("\n");
+        }
+
+        for (self.desc orelse return) |c| {
+            try writer.print("{c}", .{c});
+            if (c == '\n') {
+                for (0..padding_left) |_|
+                    try writer.writeAll(" ");
+            }
+        } try writer.writeAll("\n");
     }
 
     fn format_twocolumns(
@@ -422,12 +430,11 @@ pub const Flag = struct {
             try writer.writeAll(&[_]u8 { fmt.style });
         } try writer.writeAll(" ");
 
-        if (self.desc == null) return;
-        for (self.desc.?) |c| {
+        for (self.desc orelse return) |c| {
             try writer.print("{c}", .{c});
             if (c == '\n') {
-                for (0..padding.center+padding.left) |_| try writer.writeAll(" ");       
-            } 
+                for (0..padding.center+padding.left) |_| try writer.writeAll(" ");
+            }
         }
     }
 };
