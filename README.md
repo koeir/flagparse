@@ -98,7 +98,7 @@ const initflags: flagparse.Type.Flags = .{
             .tag = "Input",
             .long = "path",
             .short = 'p',
-            .value = Argumentative,
+            .value = Input,
             .desc = "Path to file",
         },
     }
