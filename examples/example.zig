@@ -49,7 +49,8 @@ pub fn main(init: std.process.Init) !void {
             .left = 5,
             .center = 30,
         },
-        .style = '.',
+        .greyOutFiller = true,
+        .fillerStyle = '.',
     };
 
     try stdout.writeAll("Toggled flags:\n");
@@ -71,20 +72,22 @@ pub fn main(init: std.process.Init) !void {
         }
     }
 
+
     // Also works with the Flags struct
     try stdout.writeAll("\nUsage:\n");
     try initflags.usage(stdout, .{ .padding_left = 2 });
 
-    // Different style
+    // Different fillerStyle
     flagparse.Type.Flag.fmt = .{
         .columns = .one,
         .padding = .{
             .left = 5,
         },
-        .style = ' ',  // default
+        .fillerStyle = ' ',  // default
+        .greyOutDesc = true,
     };
     try stdout.writeAll("\nUsage:\n\n");
-    try initflags.usage(stdout, .{ .padding_left = 2, .tagStyle = .brackets });
+    try initflags.usage(stdout, .{ .padding_left = 2, .tagStyle = .underline });
 }
 
 const Switch = flagparse.Type.Switch;

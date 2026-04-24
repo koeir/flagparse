@@ -177,7 +177,7 @@ pub const Flags = struct {
         printUntagged: bool = false,
         untaggedFirst: bool = true,
         tagStyle: enum {
-            brackets, colon
+            brackets, colon, underline
         } = .colon
     };
 
@@ -221,8 +221,9 @@ pub const Flags = struct {
 
             // print tag
             switch (cfg.tagStyle) {
-                .colon    => try writer.print("{s}:\n", .{ tag }),
-                .brackets => try writer.print("[{s}]\n", .{ tag }),
+                .colon      => try writer.print("{s}:\n", .{ tag }),
+                .brackets   => try writer.print("[{s}]\n", .{ tag }),
+                .underline  => try writer.print("\x1b[4m{s}\x1b[0m\n", .{ tag }),
             }
 
             // print all flags of the tag
@@ -265,7 +266,9 @@ pub const Flag = struct {
     // center padding is calculated by
     // value - n of chars in "-<s>, --<long>"
     pub const Format = struct {
-        style: u8 = ' ',
+        fillerStyle: u8 = ' ',
+        greyOutFiller: bool = false,
+        greyOutDesc: bool = false,
         columns: enum {
             one, two
         } = .two,
@@ -389,17 +392,20 @@ pub const Flag = struct {
         const padding_left = padding.left + padding.desc_left - 1;
 
         try writer.writeAll("\n");
+        if (fmt.greyOutFiller) try writer.writeAll("\x1b[90m");
         for (0..padding_left) |_| {
-            try writer.writeAll(&[_]u8{fmt.style});
-        }
+            try writer.writeAll(&[_]u8{fmt.fillerStyle});
+        } if (fmt.greyOutFiller) try writer.writeAll("\x1b[0m");
 
+        if (fmt.greyOutDesc) try writer.writeAll("\x1b[90m");
         for (self.desc orelse return) |c| {
             try writer.print("{c}", .{c});
             if (c == '\n') {
                 for (0..padding_left) |_|
                     try writer.writeAll(" ");
             }
-        } try writer.writeAll("\n");
+        } if (fmt.greyOutDesc) try writer.writeAll("\x1b[0m");
+        try writer.writeAll("\n");
     }
 
     fn format_twocolumns(
@@ -412,16 +418,19 @@ pub const Flag = struct {
 
         if (padding.center < minus) @panic("Need more center-padding!");
 
+        if (fmt.greyOutFiller) try writer.writeAll("\x1b[90m");
         for (0..padding.center-minus-1) |_| {
-            try writer.writeAll(&[_]u8 { fmt.style });
+            try writer.writeAll(&[_]u8 { fmt.fillerStyle });
         } try writer.writeAll(" ");
+        if (fmt.greyOutFiller) try writer.writeAll("\x1b[0m");
 
+        if (fmt.greyOutDesc) try writer.writeAll("\x1b[90m");
         for (self.desc orelse return) |c| {
             try writer.print("{c}", .{c});
             if (c == '\n') {
                 for (0..padding.center+padding.left) |_| try writer.writeAll(" ");
             }
-        }
+        } if (fmt.greyOutDesc) try writer.writeAll("\x1b[0m");
     }
 };
 
