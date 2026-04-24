@@ -226,17 +226,20 @@ pub const Flags = struct {
             } else false;
             if (already_done) continue;
 
-            try writer.writeAll("\n");
+            // because columns .one already prints newline
+            if (Flag.fmt.columns == .two) try writer.writeAll("\n");
+            // print padding before tags
             for (0..cfg.padding_left) |_| {
                 try writer.writeAll(" ");
             }
 
-            // print all flags of the tag
+            // print tag
             switch (cfg.tagStyle) {
                 .colon    => try writer.print("{s}:\n", .{ tag }),
                 .brackets => try writer.print("[{s}]\n", .{ tag }),
             }
 
+            // print all flags of the tag
             for (self.list) |f| {
                 if (!std.mem.eql(u8, f.tag orelse continue, tag)) continue;
                 try writer.print("{f}\n", .{ f });
@@ -291,19 +294,15 @@ pub const Flag = struct {
 
     // Toggles value of Switch type flag
     pub fn toggle(self: *Flag) !void {
-        switch (self.value) {
-            .Switch => |*val| val.* = !val.*,
-            else    => return FlagError.FlagNotSwitch,
-        }
+        if (self.value == .Switch) {
+            self.value.Switch = !self.value.Switch;
+        } else return FlagError.FlagNotSwitch;
     }
 
     pub fn set_arg(self: *Flag, arg: [:0]const u8) !void {
-        switch (self.value) {
-            .Switch => return FlagError.FlagNotArg,
-            .Argumentative => |*val| {
-                val.* = arg;
-            }
-        }
+        if (self.value == .Argumentative ) {
+            self.value.Argumentative = arg;
+        } else return FlagError.FlagNotArg;
     }
 
     // Pass on the init Flags struct
@@ -358,6 +357,7 @@ pub const Flag = struct {
             try writer.writeAll(" ");
         }
 
+        // overwrite flags with vanity if it exists
         if (self.vanity) |v| {
             try writer.writeAll(v);
             return v.len;
@@ -367,12 +367,9 @@ pub const Flag = struct {
             try writer.print("-{c}", .{ short });
             minus += "-.".len;
 
-            switch (self.value) {
-                .Argumentative => {
-                    try writer.print(" <{s}>", .{ self.name });
-                    minus += self.name.len + " <>".len;
-                },
-                else => {},
+            if (self.value == .Argumentative) {
+                try writer.print(" <{s}>", .{ self.name });
+                minus += self.name.len + " <>".len;
             }
 
             if (self.long) |_| {
@@ -386,12 +383,9 @@ pub const Flag = struct {
 
         if (self.long) |long| {
             try writer.print("--{s}", .{ long });
-            switch (self.value) {
-                .Argumentative => {
+            if (self.value == .Argumentative ) {
                     try writer.print(" <{s}>", .{ self.name });
                     minus += self.name.len + " <>".len;
-                },
-                else => {},
             }
             minus += long.len + "--".len;
         }

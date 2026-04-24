@@ -129,6 +129,6 @@ pub fn error_message(err: anyerror) ?[]const u8 {
         error.NoSuchFlag     => "No such flag",
         error.DuplicateFlag  => "Duplicate flag",
         error.ArgNoArg       => "No argument supplied",
-        else            => null,
+        else                 => null,
     };
 }
