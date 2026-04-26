@@ -28,7 +28,11 @@ See [examples/formatting.md](examples/formatting.md)
 1. Fetch with zig and add as module in build.zig
 
 ```zsh
+// Specific tag
 zig fetch --save https://github.com/koeir/flagparse/archive/refs/tags/v0.x.x.tar.gz
+
+// Or master branch
+zig fetch --save git+https://github.com/koeir/flagparse
 ```
 
 ```zig
