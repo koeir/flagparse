@@ -23,7 +23,7 @@ pub const SwitchFlag: FlagVal = .{ .Switch = false };
 pub const InputFlag: FlagVal = .{ .Input = null };
 
 pub const Switch = bool;
-pub const Input = ?[:0]const u8;
+pub const Input = ?std.ArrayList([:0]const u8);
 
 pub const FlagType = enum {
     Switch, Input
@@ -31,6 +31,7 @@ pub const FlagType = enum {
 
 pub const ParseResult = struct {
     flags: Flags,
+    flags_array: []Flag,
     argv: ?std.ArrayList([:0]const u8),
 
     pub fn init(
@@ -44,14 +45,20 @@ pub const ParseResult = struct {
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
-        self.flags.deinit(allocator);
+        for (self.flags_array) |*flag| {
+            if (flag.value != .Input) continue;
+            if (flag.value.Input) |*input| input.deinit(allocator);
+        }
+
+        allocator.free(self.flags.list);
+
         if (self.argv) |*args| args.deinit(allocator);
     }
 };
 
 pub const FlagVal = union(FlagType) {
-    Switch: bool,                 // On/off
-    Input: ?[:0]const u8, // Takes an argument
+    Switch: Switch,                 // On/off
+    Input: Input, // Takes an argument
 
     pub fn format(
         self: @This(),
@@ -59,7 +66,13 @@ pub const FlagVal = union(FlagType) {
     ) std.Io.Writer.Error!void {
         switch (self) {
             .Switch => |val| try writer.print("{}", .{ val }),
-            .Input => |val| try writer.print("{s}", .{ val.? }),
+            .Input => |val| {
+                if (val == null) return;
+
+                for (val.?.items) |arg| {
+                    try writer.print("{s}, ", .{ arg });
+                }
+            }
         }
     }
 };
@@ -116,7 +129,7 @@ pub const Flags = struct {
         comptime name: []const u8,
         comptime defaults: Flags
     ) *const Flag {
-        comptime { 
+        comptime {
             for (defaults.list) |*flag| {
                 if (std.mem.eql(u8, name, flag.name))
                     return flag;
@@ -277,39 +290,18 @@ pub const Flag = struct {
         } else return FlagError.FlagNotSwitch;
     }
 
-    pub fn setArg(self: *Flag, arg: [:0]const u8) !void {
-        if (self.value == .Input ) {
-            self.value.Input = arg;
-        } else return FlagError.FlagNotArg;
+    pub fn setArg(self: *Flag, allocator: std.mem.Allocator, arg: [:0]const u8) !void {
+        if (self.value != .Input ) return FlagError.FlagNotArg;
+
+        if (self.value.Input == null) self.value.Input = try .initCapacity(allocator, 1);
+        try self.value.Input.?.append(allocator, arg);
     }
 
     // Pass on the init Flags struct
     pub fn isDefault(self: *const Self) bool {
         switch (self.value) {
-            .Switch => |val| {
-                switch (self.default.value) {
-                    .Switch => |default| {
-                        return val == default;
-                    },
-                    else    => unreachable,
-                }
-            },
-            .Input => |val| {
-                switch (self.default.value) {
-                    .Input => |default| {
-                        if (val) |v| {
-                            if (default) |d| {
-                                return std.mem.eql(u8, v, d);
-                            } else return false;
-                        } else {
-                            if (default == null) {
-                                return true;
-                            } else return false;
-                        }
-                    },
-                    else    => unreachable,
-                }
-            },
+            .Switch => |val| return val == false,
+            .Input => |val| return val == null,
         }
     }
 

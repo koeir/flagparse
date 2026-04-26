@@ -6,12 +6,13 @@ const Flags = root.Type.Flags;
 const FlagError = root.Type.FlagError;
 
 pub fn parse_flag(
+    allocator: std.mem.Allocator,
     arg: []const u8, 
     fmt : root.Type.FlagFmt,
     flags: []Flag,
     args: *std.process.Args.Iterator,
     cfg: root.Type.ParseConfig
-) FlagError!void {
+) !void {
     const flag: *Flag = blk: switch (fmt) {
         .Long => break :blk try get_long_flag(flags, arg),
         .Short => break :blk try get_short_flag(flags, arg[0]),
@@ -31,7 +32,7 @@ pub fn parse_flag(
                 return root.Type.FlagError.ArgNoArg;
             }
 
-            try flag.setArg(next_arg);
+            try flag.setArg(allocator, next_arg);
         },
 
         .Switch => {

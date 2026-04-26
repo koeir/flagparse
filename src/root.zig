@@ -27,7 +27,7 @@ pub fn parse(
     errdefer if (out_args) |*a| a.deinit(allocator);
 
     var isErred = false;
-    var out_error: Type.FlagError = undefined;
+    var out_error: anyerror = undefined;
     var arg_count: usize = 0;
     if (!iter.skip()) return error.NoArgs;
     while (iter.next()) |arg| {
@@ -39,10 +39,10 @@ pub fn parse(
             // it takes the next arg, which wouldn't go into this
             // slice
 
-            if (out_args) |*oargs| { try oargs.append(allocator, arg); } 
-            else { 
-                out_args = try 
-                .initCapacity(allocator, args.vector.len); 
+            if (out_args) |*oargs| { try oargs.append(allocator, arg); }
+            else {
+                out_args = try
+                .initCapacity(allocator, args.vector.len);
 
                 try out_args.?.append(allocator, arg);
             }
@@ -53,15 +53,16 @@ pub fn parse(
         switch (fmt) {
             .Long   => {
                 helpers.parse_flag(
-                    arg[2..], fmt, 
-                    out_flags, &iter, 
+                    allocator,
+                    arg[2..], fmt,
+                    out_flags, &iter,
                     cfg
                 ) catch |err| {
                     isErred = true;
 
                     if (cfg.verbose) {
                         if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
-                        try cfg.writer.?.print("{s}: {s}\n", .{ arg, 
+                        try cfg.writer.?.print("{s}: {s}\n", .{ arg,
                             error_message(err) orelse @errorName(err) });
                     }
 
@@ -73,14 +74,15 @@ pub fn parse(
             .Short  => {
                 for (arg[1..], 1..) |c, i| {
                     helpers.parse_flag(
-                        &[_]u8 {c}, fmt, 
-                        out_flags, &iter, 
+                        allocator,
+                        &[_]u8 {c}, fmt,
+                        out_flags, &iter,
                         cfg
                     ) catch |err| {
                         isErred = true;
                         if (cfg.verbose){
                             if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
-                            try cfg.writer.?.print("-{c}: {s}\n", .{ 
+                            try cfg.writer.?.print("-{c}: {s}\n", .{
                                 c, error_message(err) orelse @errorName(err) });
                         }
 
@@ -103,7 +105,7 @@ pub fn parse(
         return error.NoArgs;
     }
 
-    blk: { 
+    blk: {
     // shrink out_args it because it's guaranteed to be <= args
         if (out_args) |*oargs| {
             if (oargs.items.len == args.vector.len) break :blk;
@@ -114,7 +116,7 @@ pub fn parse(
         .list = out_flags,
     };
 
-    return .{ .flags = ret, .argv = out_args };
+    return .{ .flags = ret, .flags_array = out_flags, .argv = out_args };
 }
 
 // Returns whether if a flag is in long or short form
