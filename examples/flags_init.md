@@ -1,5 +1,5 @@
 ```zig
-const flagparse = @import("./src/root.zig");
+const flagparse = @import("flagparse");
 
 const SwitchFlag = flagparse.Type.SwitchFlag;
 const InputFlag = flagparse.Type.InputFlag;
