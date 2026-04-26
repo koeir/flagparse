@@ -178,7 +178,7 @@ pub const Flags = struct {
                 inline else => |val| break :blk val,
             };
 
-            if (@TypeOf(val) != T) @compileError("'" ++ name ++ "' Flag is not a type '" ++ T ++ "'");
+            if (@TypeOf(val) != T) @compileError("'" ++ name ++ "' Flag is not a type '" ++ @typeName(T) ++ "'");
         }
 
         switch (self.get(name).?.value) {

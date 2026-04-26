@@ -1,6 +1,9 @@
 const std = @import("std");
 const flagparse = @import("flagparse");
 
+const Switch = flagparse.Type.Switch;
+const Input = flagparse.Type.Input;
+
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
     const min = init.minimal;
@@ -13,14 +16,13 @@ pub fn main(init: std.process.Init) !void {
     const stdout = &stdout_writer.interface;
     defer stdout.flush() catch {};
 
-    var gpa = std.heap.DebugAllocator(.{}){};
-    defer if (gpa.deinit() == std.heap.Check.leak) @panic("MEMORY LEAK");
+    const gpa = init.gpa;
 
     // points to erred flag
     var errptr: ?[]const u8 = null;
 
     // actual parse, returns a tuple of Flags and resulting args
-    const result = flagparse.parse(gpa.allocator(), min.args, initflags, &errptr,
+    var result = flagparse.parse(gpa, min.args, initflags, &errptr,
     .{ .allowDups = false, .verbose = true, .writer = stderr, .prefix = "my-program: ", .errOnNoArgs = true, }, ) catch |err| {
         if (err != flagparse.Type.FlagError.ArgNoArg) return;
 
@@ -32,7 +34,7 @@ pub fn main(init: std.process.Init) !void {
         try stdout.print("{f}\n", .{ flagtmp.* });
 
         return;
-    }; defer result.deinit(gpa.allocator());
+    }; defer result.deinit(gpa);
 
     // retrieve tuple values
     const flags: flagparse.Type.Flags = result.flags;
@@ -59,15 +61,23 @@ pub fn main(init: std.process.Init) !void {
         if (!f.isDefault()) try stdout.print("{f}\n", .{ f } );
     }
 
+    // Existance of flags are checked in comptime
+    _ = flags.compGet("recursive", initflags);
+    _ = flags.compGetValue(Switch, "recursive", initflags);
+
+    // Will cause compilation errors
+    // _ = flags.compGetValue(Input, "recursive", initflags);
+    // _ = flags.compGet("hey i dont exist", initflags);
+
     try stdout.writeAll("\n");
-    const file: ?[:0]const u8 = flags.getValue("file").?.Input;
+    const file: Input = try flags.getValue(Input, "file");
     if (file) |val| {
         try stdout.print("The path is {s}!\n", .{ val });
     } try stdout.writeAll("\n");
 
     try stdout.writeAll("Flagless argv list:\n");
     if (flagless_args) |args| {
-        for (args) |value| {
+        for (args.items) |value| {
             try stdout.print("{s}\n", .{ value });
         }
     }
@@ -89,8 +99,8 @@ pub fn main(init: std.process.Init) !void {
     try initflags.usage(stdout, .{ .padding_left = 2, .tagStyle = .underline });
 }
 
-const Switch = flagparse.Type.Switch;
-const Input = flagparse.Type.Input;
+const SwitchFlag = flagparse.Type.SwitchFlag;
+const InputFlag = flagparse.Type.InputFlag;
 
 // Initialize flags and their default values
 // name doesn't really matter as long as the
@@ -103,7 +113,7 @@ const initflags: flagparse.Type.Flags = .{
             .tag = "Switches",
             .long = "recursive",
             .short = 'r',
-            .value = Switch,
+            .value = SwitchFlag,
             .desc = "Recurse into directories",
         },
         .{
@@ -112,14 +122,14 @@ const initflags: flagparse.Type.Flags = .{
             .long = "force",
             .short = 'f',
             .vanity = "-[n|f], --[no-]force",
-            .value = Switch,
+            .value = SwitchFlag,
             .desc = "Skip confirmation prompts",
         },
         .{  // by default, untagged flags will not be printed
             .name = "no-force",
             .long = "no-force",
             .short = 'n',
-            .value = Switch,
+            .value = SwitchFlag,
             .desc = "Do not skip confirmation prompts",
         },
         // Arguments will accept the next argv
@@ -130,7 +140,7 @@ const initflags: flagparse.Type.Flags = .{
             .tag = "Input",
             .long = "path",
             .short = 'p',
-            .value = Input,
+            .value = InputFlag,
             .desc = "Path to file",
         },
     }
