@@ -136,8 +136,8 @@ const argv = results.argv;
 4. [Use](https://github.com/koeir/flagparse/blob/master/examples/retrieving_values.md)
 ```zig
 // Existance of flags are checked in comptime
-_ = flags.compGet("recursive", default_flags);
-_ = flags.compGetValue(Switch, "recursive", default_flags);
+_ = flags.compGet("recursive", default_flags); // returns a pointer to the flag
+_ = flags.compGetValue(Switch, "recursive", default_flags); // Switch = bool;
 
 // Will cause compilation errors
 // _ = flags.compGetValue(Input, "recursive", default_flags);
