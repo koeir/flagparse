@@ -43,9 +43,12 @@ pub fn parse(
             // slice
 
             if (out_args) |*oargs| { try oargs.append(allocator, arg); } 
-            else { out_args = try 
-                .initCapacity(allocator, args.vector.len); }
+            else { 
+                out_args = try 
+                .initCapacity(allocator, args.vector.len); 
 
+                try out_args.?.append(allocator, arg);
+            }
             continue;
         };
 
