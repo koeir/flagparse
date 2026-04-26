@@ -9,7 +9,7 @@ pub fn parse_flag(
     arg: []const u8, 
     fmt : root.Type.FlagFmt,
     flags: []Flag,
-    args: *root.Type.ArgIterator,
+    args: *std.process.Args.Iterator,
     cfg: root.Type.ParseConfig
 ) FlagError!void {
     const flag: *Flag = blk: switch (fmt) {
@@ -27,8 +27,7 @@ pub fn parse_flag(
                 return root.Type.FlagError.ArgNoArg;
             };
 
-            if (next_arg[0] == '-' and
-                !cfg.allowDashInput) {
+            if (next_arg[0] == '-' and !cfg.allowDashInput) {
                 return root.Type.FlagError.ArgNoArg;
             }
 

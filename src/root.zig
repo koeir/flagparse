@@ -14,11 +14,6 @@ pub fn parse(
     defer if (cfg.verbose) cfg.writer.?.flush()catch{};
 
     var iter = args.iterate();
-    var args_iter: Type.ArgIterator = .{
-        .args = args,
-        .iter = &iter,
-        .count = args.vector.len,
-    };
 
     // Initialize the parsed flags
     var out_flags = try allocator.alloc(Type.Flag, defaults.list.len);
@@ -33,8 +28,10 @@ pub fn parse(
 
     var isErred = false;
     var out_error: Type.FlagError = undefined;
-    if (!args_iter.skip()) return error.NoArgs;
-    while (args_iter.next()) |arg| {
+    var arg_count: usize = 0;
+    if (!iter.skip()) return error.NoArgs;
+    while (iter.next()) |arg| {
+        arg_count += 1;
         const fmt: Type.FlagFmt = flagfmt(arg) orelse {
             // If it isn't a flag, add it to out_args and continue
             //
@@ -49,6 +46,7 @@ pub fn parse(
 
                 try out_args.?.append(allocator, arg);
             }
+
             continue;
         };
 
@@ -56,7 +54,7 @@ pub fn parse(
             .Long   => {
                 helpers.parse_flag(
                     arg[2..], fmt, 
-                    out_flags, &args_iter, 
+                    out_flags, &iter, 
                     cfg
                 ) catch |err| {
                     isErred = true;
@@ -76,7 +74,7 @@ pub fn parse(
                 for (arg[1..], 1..) |c, i| {
                     helpers.parse_flag(
                         &[_]u8 {c}, fmt, 
-                        out_flags, &args_iter, 
+                        out_flags, &iter, 
                         cfg
                     ) catch |err| {
                         isErred = true;
@@ -96,7 +94,7 @@ pub fn parse(
     }
 
     if (isErred) return out_error;
-    if (args_iter.index == 1 and cfg.errOnNoArgs) {
+    if (arg_count == 0 and cfg.errOnNoArgs) {
         if (!cfg.verbose) return error.NoArgs;
 
         if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);

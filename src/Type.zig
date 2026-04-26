@@ -64,37 +64,6 @@ pub const FlagVal = union(FlagType) {
     }
 };
 
-pub const ArgIterator = struct {
-    args: std.process.Args,
-    // vvv Should not be used for iterating as it does not update index
-    iter: *std.process.Args.Iterator,
-    // ^^^
-    index: usize = 0,
-    count: usize,
-
-    pub fn current(self: *@This()) ?[:0]const u8 {
-        if (self.index > self.count) return null;
-
-        if (self.index == 0) return std.mem.span(self.args.vector[self.index]);
-
-        return std.mem.span(self.args.vector[self.index-1]);
-    }
-
-    pub fn next(self: *@This()) ?[:0]const u8 {
-        if (self.index == self.count) return null;
-
-        self.index += 1;
-        return self.iter.next();
-    }
-
-    pub fn skip(self: *@This()) bool {
-        if (self.index == self.count) return false;
-
-        self.index += 1;
-        return self.iter.skip();
-    }
-};
-
 // This is just a view into a list of immut flags.
 // This is meant to hold either the default flags or the already parsed flags;ty
 // type should not and cannot be used for mutation
