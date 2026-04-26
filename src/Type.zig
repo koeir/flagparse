@@ -43,9 +43,9 @@ pub const ParseResult = struct {
         return try root.parse(allocator, args, init_flags, errptr, cfg);
     }
 
-    pub fn deinit(self: *const @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         self.flags.deinit(allocator);
-        if (self.argv) |args| args.deinit(allocator);
+        if (self.argv) |*args| args.deinit(allocator);
     }
 };
 
@@ -147,10 +147,12 @@ pub const Flags = struct {
         comptime name: []const u8,
         comptime defaults: Flags
     ) *const Flag {
-        inline for (defaults.list) |*flag| {
-            if (std.mem.eql(u8, name, flag.name)) {
-                return flag;
-            } @compileError(name ++ ": Flag not found.");
+        comptime { 
+            for (defaults.list) |*flag| {
+                if (std.mem.eql(u8, name, flag.name)) {
+                    return flag;
+                } @compileError(name ++ ": Flag not found.");
+            }
         }
     }
 
@@ -160,7 +162,7 @@ pub const Flags = struct {
         comptime name: []const u8,
         comptime defaults: Flags
     ) *const Flag {
-        _ = compFind(name, defaults);
+        _ = comptime compFind(name, defaults);
         return self.get(name).?;
     }
 
