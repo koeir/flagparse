@@ -1,6 +1,8 @@
 const std = @import("std");
 const root = @import("root.zig");
 
+const eql = std.mem.eql;
+
 // Init struct for simpler syntax
 pub const OutArgs = struct {
     args: ?[][:0]const u8 = null,
@@ -53,8 +55,11 @@ pub const FlagFmt = enum {
 };
 
 // Type aliases
-pub const Switch: FlagVal = .{ .Switch = false };
-pub const Input: FlagVal = .{ .Input = null };
+pub const SwitchFlag: FlagVal = .{ .Switch = false };
+pub const InputFlag: FlagVal = .{ .Input = null };
+
+pub const Switch = bool;
+pub const Input = ?[:0]const u8;
 
 pub const FlagType = enum {
     Switch, Input
@@ -163,9 +168,59 @@ pub const Flags = struct {
         } else null;
     }
 
-    pub fn getValue(self: *const Self, name: []const u8) ?FlagVal {
-        const flag = self.get(name) orelse return null;
-        return flag.value;
+    pub fn getValue(self: *const Self, T: type, name: []const u8) FlagError!T {
+        const flag = try self.tryGet(name);
+        switch (flag.value) {
+            inline else => |val| {
+                if (@TypeOf(val) != T) return FlagError.TypeMismatch;
+                return val;
+            },
+        }
+    }
+
+    // Checks if flag exists at comptime
+    pub fn compFind(
+        comptime name: []const u8,
+        comptime defaults: Flags
+    ) *const Flag {
+        inline for (defaults.list) |*flag| {
+            if (std.mem.eql(u8, name, flag.name)) {
+                return flag;
+            } @compileError(name ++ ": Flag not found.");
+        }
+    }
+
+    // Checks at comptime if flag exists first, then gets it if it does.
+    pub fn compGet(
+        self: *const Self,
+        comptime name: []const u8,
+        comptime defaults: Flags
+    ) *const Flag {
+        _ = compFind(name, defaults);
+        return self.get(name).?;
+    }
+
+    pub fn compGetValue(
+        self: *const Self,
+        comptime T: type,
+        comptime name: []const u8,
+        comptime defaults: Flags
+    ) T {
+        comptime {
+            const default = compFind(name, defaults);
+            const val = blk: switch (default.value) {
+                inline else => |val| break :blk val,
+            };
+
+            if (@TypeOf(val) != T) @compileError("'" ++ name ++ "' Flag is not a type '" ++ T ++ "'");
+        }
+
+        switch (self.get(name).?.value) {
+            inline else => |val| {
+                if (@TypeOf(val) != T) unreachable;
+                return val;
+            },
+        }
     }
 
     pub fn deinit(self: *const Self, allocator: std.mem.Allocator) void {
