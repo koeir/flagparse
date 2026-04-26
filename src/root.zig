@@ -1,5 +1,4 @@
-const std = @import("std");
-const helpers = @import("helpers.zig");
+const std = @import("std"); const helpers = @import("helpers.zig");
 pub const Type = @import("Type.zig");
 
 // Memory returned must be freed
@@ -140,4 +139,40 @@ pub fn error_message(err: anyerror) ?[]const u8 {
         error.ArgNoArg       => "No argument supplied",
         else                 => null,
     };
+}
+
+pub fn construct(comptime defaults: Type.Flags) type {
+    comptime var field_names: [defaults.list.len][]const u8 = undefined;
+    comptime var field_types: [defaults.list.len]type = undefined;
+    comptime var field_attrs: [defaults.list.len]std.builtin.Type.StructField.Attributes = undefined;
+
+    inline for (defaults.list, 0..) |value, i| {
+        const T = switch (value.value) {
+            .Input => ?[][:0]const u8,
+            .Switch => bool,
+        };
+
+        field_names[i] = value.name;
+        field_types[i] = T;
+        field_attrs[i] = .{
+            .@"align" = @alignOf(T),
+        };
+    }
+
+    return @Struct(
+        .auto, null, &field_names, &field_types, &field_attrs);
+}
+
+pub fn populate(comptime flagStruct: anytype, flags: Type.Flags) !flagStruct {
+    var ret: flagStruct = undefined;
+    inline for (std.meta.fields(flagStruct)) |f| {
+        if (comptime f.type == bool) {
+            @field(ret, f.name) = try flags.getValue(Type.Switch, f.name);
+        } else if (comptime f.type == ?[][:0]const u8) {
+            const val = try flags.getValue(Type.Input, f.name);
+            @field(ret, f.name) = if (val) |v| v.items else null;
+        }
+    }
+
+    return ret;
 }
