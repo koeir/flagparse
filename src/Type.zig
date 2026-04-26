@@ -18,10 +18,11 @@ pub const FlagFmt = enum {
     Long, Short,
 };
 
-// Type aliases
+/// Initialization defaults
 pub const SwitchFlag: FlagVal = .{ .Switch = false };
 pub const InputFlag: FlagVal = .{ .Input = null };
 
+/// Type aliases
 pub const Switch = bool;
 pub const Input = ?std.ArrayList([:0]const u8);
 
@@ -31,6 +32,7 @@ pub const FlagType = enum {
 
 pub const ParseResult = struct {
     flags: Flags,
+    /// Holds the mutable array for deinitialization
     flags_array: []Flag,
     argv: ?std.ArrayList([:0]const u8),
 
@@ -77,25 +79,25 @@ pub const FlagVal = union(FlagType) {
     }
 };
 
-// This is just a view into a list of immut flags.
-// This is meant to hold either the default flags or the already parsed flags;ty
-// type should not and cannot be used for mutation
-//
-// if mutation after parsing is necessary for some reason,
-// the empty flag array made on the stack can be used
+/// This is just a view into a list of immut flags.
+/// This is meant to hold either the default flags or the already parsed flags;
+/// type should not and cannot be used for mutation
+///
+/// if mutation after parsing is necessary for some reason,
+/// the `ParseResult.flags_array` field can be used
 pub const Flags = struct {
     const Self = @This();
 
     list: []const Flag,
 
-    // returns null if not found
+    /// Returns null if not found
     pub fn get(self: *const Self, name: []const u8) ?*const Flag {
         return for (self.list) |flag| {
             if (std.mem.eql(u8, flag.name, name)) break &flag;
         } else null;
     }
 
-    // errs if not found
+    /// Errs if not found
     pub fn tryGet(self: *const Self, name: []const u8) FlagError!*const Flag {
         return for (self.list) |flag| {
             if (std.mem.eql(u8, flag.name, name)) break &flag;
@@ -114,6 +116,7 @@ pub const Flags = struct {
         } else null;
     }
 
+    /// Assert value in parameter instead of as a field in the expression
     pub fn getValue(self: *const Self, T: type, name: []const u8) FlagError!T {
         const flag = try self.tryGet(name);
         switch (flag.value) {
@@ -124,7 +127,7 @@ pub const Flags = struct {
         }
     }
 
-    // Checks if flag exists at comptime
+    /// Checks if flag exists at comptime
     pub fn compFind(
         comptime name: []const u8,
         comptime defaults: Flags
@@ -137,7 +140,7 @@ pub const Flags = struct {
         }
     }
 
-    // Checks at comptime if flag exists first, then gets it if it does.
+    /// Checks at comptime if flag exists first, minimizng runtime errors
     pub fn compGet(
         self: *const Self,
         comptime name: []const u8,
@@ -147,6 +150,7 @@ pub const Flags = struct {
         return self.get(name).?;
     }
 
+    /// Checks at comptime if flag exists first, minimizing runtime errors
     pub fn compGetValue(
         self: *const Self,
         comptime T: type,
@@ -261,12 +265,14 @@ pub const Flag = struct {
     long:   ?[]const u8 = null,
     short:  ?u8 = null,
     value:  FlagVal,
-    vanity: ?[]const u8 = null, // only for show in prints, overrides long and short
+    /// Only for show in prints, overrides long and short
+    vanity: ?[]const u8 = null,
     desc:   ?[]const u8 = null,
+    /// A pointer for the `ParseResult`'s `Flags` to the initialized ones
     default: *const Flag = undefined,
 
-    // center padding is calculated by
-    // value - n of chars in "-<s>, --<long>"
+    /// Center padding is calculated by
+    /// value - n of chars in "-<s>, --<long>"
     pub const Format = struct {
         fillerStyle: u8 = ' ',
         greyOutFiller: bool = false,
@@ -420,7 +426,6 @@ pub const ParseConfig = struct {
     verbose: bool = false,
     writer: ?*std.Io.Writer = null,
     prefix: ?[]const u8 = null,
-    // very specific
     allowDashInput: bool = true,
     errOnNoArgs: bool = false,
     exitFirstErr: bool = true,
