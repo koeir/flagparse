@@ -113,24 +113,14 @@ const default_flags = @import("./flags_init.zig").defaults;
 const arena = init.arena.allocator();
 var errptr = ?[]const u8 = null;
 
-const results = flagparse.parse(
-    arena, min.args, defaults_flags, &errptr, .{ ... }, )
+const results = flagparse.parse(arena, min.args, defaults_flags, &errptr, .{ ... }, )
 catch |err| {
-    if (err != flagparse.Type.FlagError.ArgNoArg) return;
-
-    const arg: []const u8 = errptr orelse return;
-    const flagtmp = defaults_flags.getWithFlag(arg) orelse return;
-
-    // "Usage" output when parse fails
-    try stderr.writeAll("\nUsage:\n");
-    try stderr.print("{f}\n", .{ flagtmp.* });
-
-    return;
+    // handle errors
 }; // results.deinit(allocator); if gpa, though results has to be var
 
 // Retrieving values
-const flags = results.flags;
-const argv = results.argv;
+const flags: flagparse.Type.Flags = results.flags;
+const argv: ?std.ArrayList([:0]const u8) = results.argv;
 ```
 
 4. [Use](https://github.com/koeir/flagparse/blob/master/examples/retrieving_values.md)
@@ -147,8 +137,8 @@ _ = flags.compGetValue(Switch, "recursive", default_flags); // Switch = bool;
 const file: Input = try flags.getValue(Input, "file"); // Input = ?[:0]const u8;
 if (file) |val| // do stuff
 
-const force = default_flags.getWithFlag("force") orelse return;
-const recursive = default_flags.getWithFlag(&[_]u8 { 'r' }) orelse return;
+const force = flags.getWithFlag("force") orelse return;
+const recursive = flags.getWithFlag(&[_]u8 { 'r' }) orelse return;
 
 // also .get(...), .tryGet(...) and that returns a pointer to the flag itself
 ```
