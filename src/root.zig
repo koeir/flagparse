@@ -9,7 +9,7 @@ pub fn parse(
     comptime defaults: Type.Flags,
     errptr: *?[]const u8,
     cfg: Type.ParseConfig,
-) !Type.ParseResult {
+) !ParseResult(defaults) {
     if (cfg.verbose == true and cfg.writer == null) return error.NoWriter;
     defer if (cfg.verbose) cfg.writer.?.flush()catch{};
 
@@ -112,14 +112,16 @@ pub fn parse(
             try oargs.resize(allocator, oargs.items.len);
     }}
 
-    const ret: Type.Flags = .{
-        .list = out_flags,
-    };
+    const parsed = Type.Flags { .list = out_flags };
 
     return .{
-        .flags = ret,
-        .flags_array = out_flags,
-        .argv = if (out_args) |*oargs| oargs else null };
+        .argv = if (out_args) |oargs| oargs.items else null,
+        .flags = try populateStruct(constructFlags(defaults), parsed),
+        .inner = .{
+            .flags_array = out_flags,
+            .argv = if (out_args) |*oargs| oargs else null,
+        }
+    };
 }
 
 // Returns whether if a flag is in long or short form
@@ -142,6 +144,30 @@ pub fn error_message(err: anyerror) ?[]const u8 {
         error.DuplicateFlag  => "Duplicate flag",
         error.ArgNoArg       => "No argument supplied",
         else                 => null,
+    };
+}
+
+pub fn ParseResult(
+    comptime defaults: Type.Flags, 
+) type {
+    return struct {
+        argv: ?[][:0]const u8,
+        flags: constructFlags(defaults),
+        inner: struct {
+            flags_array: []Type.Flag,
+            argv: ?*std.ArrayList([:0]const u8),
+        },
+
+        pub fn deinit(self: *const @This(), allocator: std.mem.Allocator) void {
+            for (self.inner.flags_array) |*flag| {
+                if (flag.value != .Input) continue;
+                if (flag.value.Input) |*input| input.deinit(allocator);
+            }
+
+            allocator.free(self.inner.flags_array);
+
+            if (self.inner.argv) |args| args.deinit(allocator);
+        }
     };
 }
 

@@ -30,34 +30,6 @@ pub const FlagType = enum {
     Switch, Input
 };
 
-pub const ParseResult = struct {
-    flags: Flags,
-    /// Holds the mutable array for deinitialization
-    flags_array: []Flag,
-    argv: ?*std.ArrayList([:0]const u8),
-
-    pub fn init(
-        allocator: std.mem.Allocator,
-        args: std.process.Args,
-        comptime init_flags: Flags,
-        errptr: *?[*:0]const u8,
-        cfg: ParseConfig
-    ) !ParseResult {
-        return try root.parse(allocator, args, init_flags, errptr, cfg);
-    }
-
-    pub fn deinit(self: *const @This(), allocator: std.mem.Allocator) void {
-        for (self.flags_array) |*flag| {
-            if (flag.value != .Input) continue;
-            if (flag.value.Input) |*input| input.deinit(allocator);
-        }
-
-        allocator.free(self.flags.list);
-
-        if (self.argv) |args| args.deinit(allocator);
-    }
-};
-
 pub const FlagVal = union(FlagType) {
     Switch: Switch,                 // On/off
     Input: Input, // Takes an argument
