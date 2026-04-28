@@ -11,10 +11,6 @@ pub fn main(init: std.process.Init) !void {
     const stderr = &stderr_writer.interface;
     defer stderr.flush() catch {};
 
-    var stdout_writer: std.Io.File.Writer = .init( .stdout(), io, &.{});
-    const stdout = &stdout_writer.interface;
-    defer stdout.flush() catch {};
-
     const parsecfg: zigflag.Type.ParseConfig = .{
         .allowDashInput = true,
         .allowDups = true,
@@ -27,15 +23,25 @@ pub fn main(init: std.process.Init) !void {
     var errptr: ?[]const u8 = null;
     // actual parse, returns a tuple of Flags and resulting args
     const result = try zigflag.parse(init.gpa, min.args, defaults, &errptr, parsecfg);
-    defer result.deinit(init.gpa);
+    defer result.deinit();
 
     const flags = result.flags;
     std.debug.print("recursive: {}\n", .{flags.recursive});
     std.debug.print("force: {}\n", .{flags.force});
 
+    std.debug.print("\n", .{});
     if (flags.files) |files| {
+        std.debug.print("files:\n", .{});
         for (files) |file| {
-            std.debug.print("{s}\n", .{file});
-        }
+            std.debug.print("{s} ", .{file});
+        } std.debug.print("\n", .{});
+    }
+
+    std.debug.print("\n", .{});
+    if (result.argv) |args| {
+        std.debug.print("flagless args:\n", .{});
+        for (args) |arg| {
+            std.debug.print("{s} ", .{arg});
+        } std.debug.print("\n", .{});
     }
 }
