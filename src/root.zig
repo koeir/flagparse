@@ -110,7 +110,7 @@ pub fn parse(
 
     return .{
         .argv = if (out_args) |oargs| oargs.items else null,
-        .flags = try populateStruct(constructFlags(defaults), parsed),
+        .flags = try populateStruct(StructFlags(defaults), parsed),
         .allocator = allocator,
         .inner = .{
             .flags_array = out_flags,
@@ -145,7 +145,7 @@ pub fn ParseResult(
 ) type {
     return struct {
         argv: ?[][:0]const u8,
-        flags: constructFlags(defaults),
+        flags: StructFlags(defaults),
         allocator: std.mem.Allocator,
         inner: struct {
             flags_array: []Type.Flag,
@@ -169,7 +169,7 @@ pub fn ParseResult(
 }
 
 /// Initializes a struct for holding values of parsed arguments.
-pub fn constructFlags(comptime defaults: Type.Flags) type {
+pub fn StructFlags(comptime defaults: Type.Flags) type {
     comptime var field_names: [defaults.list.len][]const u8 = undefined;
     comptime var field_types: [defaults.list.len]type = undefined;
     comptime var field_attrs: [defaults.list.len]std.builtin.Type.StructField.Attributes = undefined;
