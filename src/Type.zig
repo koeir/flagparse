@@ -51,12 +51,8 @@ pub const FlagVal = union(FlagType) {
     }
 };
 
-/// This is just a view into a list of immut flags.
-/// This is meant to hold either the default flags or the already parsed flags;
-/// type should not and cannot be used for mutation
-///
-/// if mutation after parsing is necessary for some reason,
-/// the `ParseResult.flags_array` field can be used
+/// Struct for initializing default flags.
+/// Also an interface for retrieving `Type.Flag`s for printing and whatnot.
 pub const Flags = struct {
     const Self = @This();
 

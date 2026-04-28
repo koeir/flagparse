@@ -148,7 +148,13 @@ pub fn ParseResult(
             argv: ?*std.ArrayList([:0]const u8), 
             flags_array: []Type.Flag
         ) !Self {
-            const parsed: Type.Flags = .{ .list = flags_array };
+            var parsed: std.StringHashMap(Type.Flag) = .init(allocator);
+            defer parsed.deinit();
+
+            for (flags_array) |flag| {
+                try parsed.put(flag.name, flag);
+            }
+
             const struct_flags = try populateStruct(StructFlags(defaults), parsed);
 
             return .{
@@ -201,13 +207,13 @@ pub fn StructFlags(comptime defaults: Type.Flags) type {
         .auto, null, &field_names, &field_types, &field_attrs);
 }
 
-pub fn populateStruct(comptime flagStruct: anytype, flags: Type.Flags) !flagStruct {
+pub fn populateStruct(comptime flagStruct: anytype, flags: std.StringHashMap(Type.Flag)) !flagStruct {
     var ret: flagStruct = undefined;
     inline for (std.meta.fields(flagStruct)) |f| {
         @field(ret, f.name) = sw: switch (f.type) {
-            bool => try flags.getValue(Type.Switch, f.name),
+            bool => flags.get(f.name).?.value.Switch,
             ?[][:0]const u8 => {
-                const val = try flags.getValue(Type.Input, f.name);
+                const val = flags.get(f.name).?.value.Input;
                 break :sw if (val) |v| v.items else null;
             },
             inline else => @compileError("Invalid type during struct population.")
