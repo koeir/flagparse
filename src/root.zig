@@ -30,7 +30,6 @@ pub fn parse(
     var isErred = false;
     var out_error: anyerror = undefined;
     var arg_count: usize = 0;
-    if (!iter.skip()) return error.NoArgs;
     while (iter.next()) |arg| {
         arg_count += 1;
         const fmt: Type.FlagFmt = flagfmt(arg) orelse {
