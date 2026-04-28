@@ -1,6 +1,6 @@
 ```zig
-    const defaults = @import("./init_flags.zig").defaults;
-    const Flags = zigflag.StructFlags(defaults);
+const defaults = @import("./init_flags.zig").defaults;
+const Flags = zigflag.StructFlags(defaults);
 
 pub fn main(init: std.process.Init) !void {
     ...
