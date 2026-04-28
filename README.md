@@ -112,8 +112,11 @@ pub const defaults: Flags = .{
 
 3. [Parse flags](https://github.com/koeir/zigflag/blob/master/examples/parsing.md)
 ```zig
-    const default_flags = @import("./flags_init.zig").defaults;
+    const defaults = @import("./init_flags.zig").defaults;
+    const Flags = zigflag.StructFlags(defaults);
 
+pub fn main(init: std.process.Init) !void {
+    ...
     // Make config
     const parsecfg: zigflag.Type.ParseConfig = .{
         .allowDashInput = true,
@@ -130,12 +133,19 @@ pub const defaults: Flags = .{
     defer result.deinit();
 
     // retrieving values
-    _ = result.flags;
-    _ = result.argv;
+    const flags: Flags = result.flags;
+    const argv: ?[][:0]const u8 = result.argv;
+    ...
+}
 ```
 
 4. [Use](https://github.com/koeir/zigflag/blob/master/examples/retrieving_values.md)
 ```zig
+    const defaults = @import("./init_flags.zig").defaults;
+    const Flags = zigflag.StructFlags(defaults);
+
+pub fn main(init: std.process.Init) !void {
+    ...
     const flags = result.flags;
     std.debug.print("recursive: {}\n", .{flags.recursive});
     std.debug.print("force: {}\n", .{flags.force});
@@ -153,6 +163,8 @@ pub const defaults: Flags = .{
             std.debug.print("{s} ", .{arg});
         } std.debug.print("\n", .{});
     }
+    ...
+}
 ```
 
 5. [Optionally customize](examples/formatting.md)
