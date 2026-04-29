@@ -44,17 +44,8 @@ zig fetch --save git+https://github.com/koeir/zigflag
         .optimize = optimize,
     });
 
-    const exe = b.addExecutable(.{
-        .name = "example",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main.zig"),
-            .target = target,
-            .optimize = optimize,
-        })
-    });
-
+    const exe = b.addExecutable(.{...});
     exe.root_module.addImport("zigflag", zigflag.module("zigflag"));
-    b.installArtifact(exe);
 ```
 
 2. [Initialize flags](https://github.com/koeir/zigflag/blob/master/examples/flags_init.md)
@@ -141,7 +132,7 @@ pub fn main(init: std.process.Init) !void {
     ...
 }
 ```
-The flags are stored in a struct in which the fields are names of the flags. Each field will have their corresponding values (Switch/bool, Input/?[][:0]const u8).
+The flags are stored in a struct in which the fields are names of the flags. Each field will have their corresponding values (`Switch`/`bool`, `Input`/`?[][:0]const u8`). The struct also holds the allocator, inner arrays, and necessary components for deinit. `gpa` is used here, but it might be more convenient to use arena allocators.
 
 4. [Use](https://github.com/koeir/zigflag/blob/master/examples/retrieving_values.md)
 ```zig
@@ -188,8 +179,6 @@ pub fn main(init: std.process.Init) !void {
 ```
 
 ```zsh
-Usage:
-
   Switches:
      -r, --recursive.............. Recurse into directories
      -[n|f], --[no-]force......... Skip confirmation prompts
