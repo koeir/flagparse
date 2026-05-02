@@ -60,8 +60,7 @@ const Flags = zigflag.Type.Flags;
 // Initialize flags and their default values
 // name doesn't really matter
 pub const defaults: Flags = .{
-    .list = &.
-    {
+    .list = &.{
         .{
             .name = "recursive",
             .tag = "Switches",
